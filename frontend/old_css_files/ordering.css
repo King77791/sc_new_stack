@@ -1,0 +1,341 @@
+/* ordering - step 1 (contacts) */
+.step-back__container .section__content {
+    margin-block: 2.5rem 1.06rem;
+}
+.step-back__link {
+    font-family: inherit;
+    font-size: 1.125rem;
+    font-weight: 400;
+    line-height: normal;
+    text-transform: uppercase;
+    color: var(--cream-gold);
+    text-decoration: none;
+}
+.step-back__link svg {
+    margin-right: 0.5rem;
+}
+.section_ordering {
+    --_items-gap_big: 2.5rem
+}
+.section_ordering .section__content {
+    --_content-width: 56.785rem;
+    max-width: var(--_content-width);
+    padding-bottom: 8rem;
+}
+.form__container {
+    margin-top: 1rem;
+}
+.form__container + .form__container {
+    margin-top: 3.2rem;
+}
+.form__container .section__header {
+    margin-bottom: 2.5rem;
+}
+.form__group_inline {
+    display: flex;
+    column-gap: 1.25rem;
+}
+.form__group_inline + .form__group_inline {
+    margin-top: .7rem;
+}
+.form__group {
+    display: flex;
+    flex-direction: column;
+    row-gap: .25rem;
+    flex-grow: 1;
+    position: relative;
+    padding-bottom: 1.25rem;
+}
+.payment-methods__item .form__group {
+    flex-direction: row;
+}
+.form__input,
+.form__textarea {
+    padding: 1.31rem 1rem;
+    border-radius: .5rem;
+    background: rgba(255, 255, 255, 0.20);
+    border: none;
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: normal;
+    color: #fff;
+    font-family: inherit;
+}
+.form__textarea {
+    resize: none;
+}
+.form__input[type="number"]::-webkit-inner-spin-button {
+    display: none;
+}
+.form__input::placeholder {
+    color: rgba(255, 255, 255, 0.20);
+}
+.error {
+    font-size: 1rem;
+    line-height: normal;
+    font-weight: 400;
+    color: var(--cream-gold);
+    position: absolute;
+    bottom: 0;
+}
+.delivery-method__nav {
+    margin-block: var(--_items-gap_big);
+    margin-inline: auto;
+}
+.delivery-method__list {
+    display: flex;
+    column-gap: var(--_items-gap_big);
+}
+.delivery-method__list > * {
+    flex-grow: 1;
+}
+.delivery-method__button {
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: normal;
+    color: rgba(255, 255, 255, .40);
+    border-bottom: 2px solid currentColor;
+    width: 100%;
+    text-align: center;
+    padding-block: .25rem;
+    transition: color .2s linear;
+}
+.delivery-method__button:is(:hover, :focus, :active, .active) {
+    color: #fff;
+    border-color: var(--cream-gold);
+    transition: color .2s linear;
+}
+.delivery-method_section + .delivery-method_section {
+    margin-top: 3.2rem;
+}
+.delivery-method_section > * + * {
+    margin-top: var(--_items-gap_big);    
+}
+.courier-methods__list {
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+}
+.courier-methods__list::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: .125rem;
+    background-color: rgba(255, 255, 255, 0.20);
+}
+.courier-methods__list > * + * {
+    margin-top: 1.25rem;
+}
+.courier-methods__item {
+    display: flex;
+    column-gap: 0.62rem;
+}
+.courier-methods__tippy_button svg {
+    vertical-align: bottom;
+}
+.form__step-complete_container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.delivery-method__content .form__step-complete_container {
+    margin-top: 1.25rem;
+}
+.form__step-complete_container .dropdown__label {
+    font-size: 1.125rem;
+}
+.form__step-complete_container .dropdown__label a {
+    color: inherit;
+}
+.form__step-complete_container > * + * {
+    margin-top: 1.25rem;
+}
+.form__step-complete_container :is(button, a) {
+    max-width: 18.75rem;
+    text-align: center;
+}
+.section__header_small {
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: normal;
+    color: var(--cream-gold);
+    margin-left: 1.25rem;
+}
+/* ordering - step 1 (contacts) */
+/* ordering - step 2 (payment) */
+.form__container_payment {
+    margin-top: 2.5rem;
+    --_items-gap_small: 1.25rem;
+}
+.form__container_payment + .form__container_payment {
+    margin-top: var(--_items-gap_big);
+}
+.step-back__container + .form__container_payment {
+    padding-bottom: var(--_items-gap_big);
+    position: relative;
+}
+.step-back__container + .form__container_payment::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: .125rem;
+    background-color: rgba(255, 255, 255, 0.20);
+}
+.form__container_payment .section__header_clear {
+    margin-left: 0;
+    text-align: left;
+    font-size: 2rem;
+    margin-bottom: var(--_items-gap_big);
+}
+.cusomer-data__item {
+    font-size: 1.5rem;
+}
+.form__container_payment ul li + li {
+    margin-top: var(--_items-gap_small);
+}
+.form__container_payment .form__step-complete_container {
+    margin-top: var(--_items-gap_big);
+}
+.payment-methods__list {
+    display: flex;
+    align-items: center;
+    column-gap: 1.25rem;
+}
+.payment-methods__item {
+    flex-basis: 12.5rem;
+    display: flex;
+}
+.payment-methods__item + .payment-methods__item {
+    margin: 0;
+}
+.payment-methods__label {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    background: rgba(255, 255, 255, .05);
+    border: 2px solid transparent;
+    border-radius: .5rem;
+    cursor: pointer;
+}
+[name="payment-methods"]:checked + .payment-methods__label {
+    border-color: var(--cream-gold);
+}
+.payment-methods__label * {
+    pointer-events: none;
+}
+@media screen and (max-width: 449px) {
+    .payment-methods__list {
+        flex-wrap: wrap;
+        row-gap: 15px;
+        column-gap: 15px;
+        justify-content: center;
+    }
+    .payment-methods__item {
+        flex-basis: initial;
+    }
+    .payment-methods__ic {
+        height: 100%;
+        width: 150px;
+    }
+}
+/* ordering - step 2 (payment) */
+/* ordering - success */
+.section_ordering.success .section__content > * + * {
+    margin-top: var(--_items-gap_big);
+}
+.section__subheader {
+    font-size: 1.5rem;
+    text-align: center;
+}
+.section__subheader_link {
+    color: var(--cream-gold);
+    text-decoration: none;
+}
+.section__subheader.section__subheader_left {
+    text-align: left;    
+}
+/* ordering - success */
+@media screen and (max-width: 449px) {
+    .section_ordering .section__content {
+        padding-bottom: 2.5rem;
+    }
+    .step-back__link {
+        font-size: .875rem;
+    }
+    .form__container {
+        margin-top: 1.5rem;
+    }
+    .form__container .section__header {
+        padding: 0;
+        margin-bottom: 1.5rem;
+    }
+    .delivery-method__nav {
+        margin-block: 1.25rem;
+    }
+    .delivery-method__list {
+        column-gap: 1rem;
+    }
+    .delivery-method__button {
+        font-size: 1.5rem;
+    }
+    .form__group_inline {
+        flex-direction: column;
+    }
+    .form__group_inline + .form__group_inline {
+        margin-top: 0;
+    }
+    .form__label {
+        font-size: 1.25rem;
+        line-height: 1.5rem;
+        font-weight: 400;
+    }
+    .form__input {
+        padding: .95rem 1rem;
+    }
+    .delivery-method_section + .delivery-method_section {
+        margin-top: 1.5rem;
+    }
+    .delivery-method_section > .section__header {
+        text-align: left;
+    }
+    .dropdown__label {
+        text-align: left;
+        font-size: 1.125rem;
+        flex-grow: 1;
+    }
+    .section__subheader {
+        font-size: 1rem;
+    }
+}
+.loader {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    position: relative;
+    animation: rotate 1s linear infinite
+}
+.loader::before {
+    content: "";
+    box-sizing: border-box;
+    position: absolute;
+    inset: 0px;
+    border-radius: 50%;
+    border: 5px solid #FFF;
+    animation: prixClipFix 2s linear infinite ;
+}
+
+@keyframes rotate {
+    100%   {transform: rotate(360deg)}
+}
+
+@keyframes prixClipFix {
+    0%   {clip-path:polygon(50% 50%,0 0,0 0,0 0,0 0,0 0)}
+    25%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 0,100% 0,100% 0)}
+    50%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,100% 100%,100% 100%)}
+    75%  {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,0 100%,0 100%)}
+    100% {clip-path:polygon(50% 50%,0 0,100% 0,100% 100%,0 100%,0 0)}
+}

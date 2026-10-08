@@ -1,0 +1,145 @@
+.promo__img {
+    max-width: 100%;
+    height: auto;
+}
+
+.section_partner {
+    padding-block: 5.5625rem 4.25rem;
+    background: url('/design/images/img_for_landing/special_offer/bg_def.webp') no-repeat;
+    background-position: top center;
+    background-size: cover;
+}
+.section_partner .section__content {
+    text-align: center;
+    max-width: 48rem;
+    margin-inline: auto;
+}
+.section_partner .section__header {
+    padding-bottom: .5rem;
+    border-bottom: 2px solid var(--cream-gold);
+}
+.section_partner .section__paragraph {
+    margin-top: 2rem;
+}
+.section_partner .form__input {
+    border: 1px solid var(--cream-gold);
+}
+.section_partner .button__filled_gold {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.section_partner .button__filled_gold .button__ic {
+    width: 2rem;
+    height: 2rem;
+    margin-right: .125rem;
+    display: inline-block;
+    background: url('/design/images/img_for_landing/copy_ic.svg') no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+.section_partner .button__filled_gold.copied .button__ic,
+.section_partner .button__filled_gold:focus .button__ic {
+    background: url('/design/images/img_for_landing/copied_ic.svg') no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+[data-text]::before {
+    content: attr(data-text);
+}
+.section_partner .button__filled_gold.copied [data-text]::before,
+.section_partner .button__filled_gold:focus [data-text]::before {
+    content: "Скопировано";
+}
+.partner__logo {
+    margin-top: 5.75rem;
+}
+@media screen and (max-width: 1024px) {
+    .section_partner {
+        padding-block: 5.5625rem 2.125rem;
+        background: url('/design/images/img_for_landing/special_offer/bg_tablet.webp') no-repeat;
+        background-position: top center;
+        background-size: cover;
+    }
+    .partner__logo {
+        max-width: 205px;
+        height: auto;
+    }
+}
+@media screen and (max-width: 480px) {
+    .section_partner {
+        padding-block: 5.5625rem 3.375rem;
+        background: url('/design/images/img_for_landing/special_offer/bg_phone.webp') no-repeat;
+        background-position: top center;
+        background-size: cover;
+    }
+    .section_partner .form__group_inline {
+        row-gap: 1rem;
+    }
+    .section_partner .form__input {
+        text-align: center;
+    }
+    .partner__logo {
+        max-width: 131px;
+    }
+    .section_partner [data-tippy-root] {
+        display: none;
+    }
+}
+
+.section_catalog_wrap .section__catalog_grid {
+    padding-bottom: 2.5rem;
+}
+
+.section_social {
+    padding-block: 4rem 12.625rem;
+    margin-top: 9.375rem;
+    background: url('/design/images/img_for_landing/social/bg_def.webp') no-repeat;
+    background-position: top center;
+    background-size: cover;
+}
+.socail__content .section__subheader {
+    text-align: left;
+    margin-top: 3.25rem;
+}
+.socail__content .section__paragraph {
+    margin-top: 5px;
+}
+@media screen and (max-width: 1024px) {
+    .section_social {
+        padding-block: 2rem 3.25rem;
+        margin-top: 2.375rem;
+        background: url('/design/images/img_for_landing/social/bg_tablet.webp') no-repeat;
+        background-position: top center;
+        background-size: cover;
+    }
+    .main__logo_social {
+        max-width: 217px;
+        height: auto;
+    }
+    .socail__content .section__subheader {
+        margin-top: 1.25rem;
+    }
+}
+@media screen and (max-width: 480px) {
+    .section_social {
+        padding-block: .5rem 4.25rem;
+        margin-top: 5.25rem;
+        background: url('/design/images/img_for_landing/social/bg_phone.webp') no-repeat;
+        background-position: top center;
+        background-size: cover;
+    }
+    .main__logo_social {
+        max-width: 7.5rem;
+    }
+    .socail__content .section__subheader {
+        margin-top: 2rem;
+    }
+    .socail__content .section__paragraph br {
+        display: none;
+    }
+    .section_social .social__list li:first-child {
+        flex-grow: initial;
+        flex-basis: initial;
+    }
+}

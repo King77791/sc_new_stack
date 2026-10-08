@@ -1,0 +1,84 @@
+.category-page .section_category {
+    background: linear-gradient(90deg, #0B1512 0%, #1C3630 100%);
+    padding-top: .63rem;
+}
+.section_category .section__content {
+    display: flex;
+    align-items: center;
+    max-width: 76.25rem;
+}
+.section_category .section__content {
+    display: flex;
+    align-items: center;
+    max-width: 76.25rem;
+    justify-content: space-between;
+}
+.category__ic {
+    max-width: clamp(18.75rem, 31.25vw, 37.5rem);
+    height: auto;
+    align-self: flex-end;
+}
+.section_category .section__header {
+    font-size: clamp(1.5rem, 3.125vw, 3.75rem);
+    padding-block: 0.56rem;
+    border: none;
+    position: relative;
+    min-width: clamp(12rem, 19.322vw, 23.1875rem);
+}
+.section_category .section__header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: .125rem;
+    opacity: 0.1;
+    background: linear-gradient(90deg, #87552E 0%, #CC9949 17.19%, #F4E0A3 38.57%, #F4E0A3 64.02%, #CC9949 86.84%, #8C5B30 100%), #D9D9D9;
+    width: clamp(100%, 23.125vw, 27.75rem);
+}
+.section_category .section__header::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: .125rem;
+    background: linear-gradient(90deg, rgba(135, 85, 46, 0.00) 0%, rgba(204, 153, 73, 0.19) 17.19%, rgba(244, 224, 163, 0.21) 38.57%, #F4E0A3 64.02%, #CC9949 86.84%, #8C5B30 100%);
+    width: clamp(100%, 35.677vw, 42.8125rem);
+}
+@media screen and (max-width: 1024px) {
+    .section_category .section__content {
+        max-width: 59rem;
+        min-height: 12.5rem;
+        padding-inline: 0;
+        padding-inline-end: 7.5rem;
+    }
+}
+@media screen and (max-width: 961px) {
+    .section_category .section__content {
+        padding-inline-start: 1rem;
+        padding-inline-end: 7.5rem;
+    }
+}
+@media screen and (max-width: 695px) {
+    .section_category .section__content {
+        padding-inline: 1rem;
+    }
+}
+@media screen and (max-width: 590px) {
+    .category-page .section_category {
+        padding-top: 0;
+    }
+    .section_category .section__content {
+        height: 9.3125rem;
+        min-height: unset;
+        column-gap: 1rem;
+        overflow: hidden;
+    }
+    .section_category .section__header::after {
+        right: initial;
+        left: -3rem;
+    }
+    .category__ic {
+        width: 15rem;
+        height: auto;
+    }
+}
