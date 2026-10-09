@@ -309,30 +309,1096 @@ CSS Modules располагаются рядом с соответствующ�
 
 ---
 
-## 8. Domain model
+## 8. Product Domain Model v0.1
 
-Окончательная domain model интернет-магазина пока не утверждена.
+Этот раздел описывает предметную модель продукта интернет-магазина
+«Столица чая».
 
-Не считай временные TypeScript interfaces окончательной моделью предметной области.
+Это domain specification, а не окончательная схема backend API,
+database schema или набор TypeScript interfaces.
 
-На текущем уровне предполагаются сущности:
+Product Domain Model v0.1 является утверждённым описанием текущей
+бизнес-логики продукта «Столицы чая».
 
-- Product;
-- ProductVariant;
-- Category;
-- Cart;
-- CartItem;
-- Favorites;
-- Order;
-- Article/Event.
+Не создавай backend DTO или API models на основании этого раздела.
+Backend API будет предоставлен позже и должен быть отдельно сопоставлен
+с этой domain model до определения конкретных моделей интеграции.
 
-Дополнительные предметные сущности, включая характеристики чая, вкусы, состояния и другие параметры, будут определены отдельно на основании бизнес-логики «Столицы чая».
+Цель раздела — зафиксировать бизнес-смысл сущностей и правила,
+которые frontend и backend должны соблюдать независимо от конкретной
+реализации API.
 
-Не объединяй автоматически разные бизнес-сущности только потому, что backend возвращает их одним объектом.
+Legacy frontend содержит ряд плоских полей продукта. Новая архитектура
+не должна механически воспроизводить эту структуру.
 
-Backend DTO и frontend domain model могут отличаться.
+Backend DTO и frontend domain models могут отличаться.
+При необходимости между ними должен использоваться adapter layer.
 
-При необходимости используй adapters для преобразования API DTO в frontend models.
+---
+
+### 8.1. Product
+
+`Product` — основная товарная сущность магазина.
+
+Продукт должен описывать сам товар и его устойчивые характеристики,
+но не должен становиться контейнером для всех связанных данных,
+пользовательского состояния и вычисляемой бизнес-логики.
+
+На текущем этапе Product концептуально включает:
+
+- identity;
+- classification;
+- physical characteristics;
+- brewing information, если применимо;
+- media/content;
+- commerce-related references;
+- relations with other products.
+
+Точная TypeScript-модель должна быть определена после сопоставления
+domain model с backend API.
+
+---
+
+### 8.2. Product Identity
+
+К идентичности продукта относятся:
+
+- `id` / legacy `productUid`;
+- `title` / legacy `productTitle`;
+- `slug` / legacy `productSlug`;
+- `sku` / legacy `productSKU`.
+
+`slug` используется для формирования человеко-понятных URL.
+
+SKU является уникальным артикулом Product.
+
+В текущей бизнес-модели изменение фасовки или выбранного веса
+не изменяет SKU продукта.
+
+Не создавай отдельный SKU для каждой фасовки без изменения
+бизнес-требований или backend contract.
+
+Legacy naming не должен распространяться по новой кодовой базе без
+необходимости.
+
+Предпочтительные domain names:
+
+- `id`;
+- `title`;
+- `slug`;
+- `sku`.
+
+---
+
+### 8.3. Product Classification
+
+Product может быть связан с несколькими независимыми
+классификаторами:
+
+- `Category`;
+- `Country`;
+- `Origin`;
+- `Mood[]`;
+- `Taste[]`.
+
+Эти сущности имеют разный бизнес-смысл и не должны автоматически
+объединяться.
+
+---
+
+### 8.4. Category
+
+`Category` — самостоятельная сущность каталога.
+
+Legacy frontend использует:
+
+- `productCategoryId`;
+- `productCategoryTitle`;
+- `productCategorySlug`;
+- `productCategoryYmCode`.
+
+Концептуально Category содержит как минимум:
+
+- id;
+- title;
+- slug.
+
+Категория участвует в:
+
+- структуре каталога;
+- навигации;
+- фильтрации;
+- формировании URL;
+- применении некоторых promotion rules.
+
+`productCategoryYmCode` относится к analytics metadata
+для Яндекс.Метрики и не является фундаментальной частью
+предметной модели Category.
+
+Analytics metadata не должна определять архитектуру Product.
+
+---
+
+### 8.5. Country
+
+`Country` и `Origin` являются разными сущностями.
+
+Country используется как самостоятельный классификатор товара и
+как часть визуального представления региона на клиенте.
+
+Country может использоваться для:
+
+- фильтрации каталога;
+- отображения страны происхождения;
+- выбора стилизованного визуального представления;
+- отображения country icon;
+- отображения country background.
+
+Legacy данные:
+
+- `productCountryTitle`;
+- `productCountrySlug`;
+- `productCountryIcon`;
+- `productCountryBG`;
+
+не должны автоматически интерпретироваться как Origin.
+
+В новой модели данные страны должны быть отделены от более точного
+географического происхождения продукта.
+
+Концептуально Country может содержать:
+
+- id;
+- title;
+- slug;
+- icon;
+- background image.
+
+Конкретная структура определяется backend contract.
+
+---
+
+### 8.6. Origin
+
+`Origin` описывает более точное происхождение продукта.
+
+Это может быть:
+
+- регион;
+- провинция;
+- местность;
+- чайный район;
+- плантация;
+- другое конкретное место происхождения.
+
+Origin используется независимо от Country и может участвовать
+в фильтрации каталога.
+
+Пример:
+
+Country:
+`Taiwan`
+
+Origin:
+`Alishan`
+
+Product:
+`Габа Улун из Алишаня`
+
+Не ограничивай Origin только уровнем страны.
+
+Архитектура должна позволять в будущем расширять географическую
+детализацию без изменения базовой модели Product.
+
+---
+
+### 8.7. Mood
+
+`Mood` — самостоятельная бизнес-сущность.
+
+Legacy field:
+`productMoodsSetting`.
+
+Один Product может быть связан максимум с 3 Mood.
+
+Mood описывает состояние, для которого продукт может быть выбран
+пользователем.
+
+Примеры:
+
+- концентрация;
+- энергия;
+- гармония;
+- баланс;
+- сон;
+- уверенность.
+
+Mood является частью продуктовой концепции «Столицы чая»
+«Управляй состоянием!» и не является только декоративным текстом
+карточки товара.
+
+Mood может использоваться для:
+
+- фильтрации каталога;
+- навигации;
+- рекомендаций;
+- подборок;
+- product discovery;
+- отображения в ProductCard/ProductPage.
+
+Не объединяй Mood с Taste.
+
+---
+
+### 8.8. Taste
+
+`Taste` — самостоятельный классификатор вкусовых характеристик
+продукта.
+
+Legacy field:
+`productTastes`.
+
+Один Product может быть связан максимум с 3 Taste.
+
+Taste может использоваться для:
+
+- отображения характеристик;
+- фильтрации;
+- поиска;
+- рекомендаций.
+
+Taste и Mood являются независимыми сущностями.
+
+---
+
+### 8.9. Physical Characteristics
+
+Физические характеристики Product зависят от типа товара.
+
+Не предполагай, что каждый Product имеет вес или объём.
+
+Примеры физических характеристик:
+
+- harvest year;
+- fixed weight;
+- volume;
+- другие type-specific characteristics.
+
+Legacy `productYear` соответствует году урожая там, где это применимо.
+
+---
+
+### 8.10. Weight
+
+Вес имеет разный бизнес-смысл в зависимости от способа продажи
+продукта.
+
+Не используй одно поле `weight` без понимания его семантики.
+
+#### Weight-based products
+
+Для весового чая выбранный вес является purchase configuration.
+
+Например:
+
+- 50 g;
+- 100 g;
+- 200 g;
+- 250 g.
+
+Набор доступных весов может отличаться между продуктами.
+
+Не hardcode глобальный список доступных весов для всех чаёв.
+
+#### Fixed-weight piece products
+
+Прессованный чай может продаваться в штуках, при этом каждая штука
+имеет фиксированный физический вес.
+
+Примеры:
+
+- 75 g;
+- 100 g;
+- 357 g;
+- другие значения.
+
+Фиксированный вес должен быть гибким числовым значением.
+
+Не ограничивай его enum из известных на данный момент весов.
+
+Пример:
+
+Product:
+`Шу Пуэр`
+
+Sale unit:
+`piece`
+
+Physical weight:
+`357 g`
+
+Quantity:
+`1, 2, 3...`
+
+---
+
+### 8.11. Approximate Weight
+
+Некоторые весовые продукты имеют физическую форму, из-за которой
+невозможно гарантировать абсолютно точный фактический вес выбранной
+фасовки.
+
+Пример:
+`Бу Бу Гао Шен` реализуется в форме отдельных шариков.
+
+Пользователь может выбрать номинальный вес, например 100 g,
+но фактически отпускаемый вес может немного отличаться.
+
+Не проектируй механизм tolerance или actual weight без отдельного
+бизнес-требования и backend contract.
+
+Однако архитектура не должна исходить из предположения, что
+номинальный вес всегда физически равен фактическому весу с абсолютной
+точностью.
+
+---
+
+### 8.12. Volume
+
+Объём является физической характеристикой некоторых Product,
+например чайников.
+
+Пример:
+
+Product:
+`Чайник «Морское ушко»`
+
+Sale unit:
+`piece`
+
+Volume:
+`180 ml`
+
+Volume не является единицей продажи.
+
+Не моделируй 180 ml как PurchaseOption, если товар продаётся как
+один физический предмет.
+
+---
+
+### 8.13. BrewingGuide
+
+Legacy frontend использует:
+
+- `productPreparingTime`;
+- `productTemperature`;
+- `productCountPerPiece`;
+- `productAmountUses`.
+
+Эти значения логически относятся к рекомендациям по приготовлению
+продукта и могут быть представлены domain entity/value object
+`BrewingGuide`.
+
+Концептуально BrewingGuide может включать:
+
+- infusion/preparing time;
+- recommended temperature;
+- recommended amount per brewing;
+- recommended infusion/use count.
+
+Не изменяй типы этих значений и не вводи min/max структуры
+без подтверждения backend contract или отдельного бизнес-требования.
+
+BrewingGuide применяется только к продуктам, для которых эти данные
+имеют смысл.
+
+---
+
+### 8.14. Media
+
+Legacy `productImg` представляет основное изображение продукта.
+
+Новая модель должна позволять как минимум:
+
+- main image;
+- product gallery.
+
+Media не должна ограничиваться одним legacy `productImg`.
+
+Production media source должен определяться backend/CMS architecture.
+
+Временные Figma URLs не являются production media URLs.
+
+---
+
+## 8.15. Purchase Configuration
+
+Способ покупки Product не должен смешиваться с его устойчивыми
+характеристиками.
+
+В зависимости от типа товара пользователь может выбирать:
+
+- вес;
+- количество;
+- либо только количество при фиксированных характеристиках товара.
+
+До получения backend API не фиксируй окончательное название
+`ProductVariant`, `PurchaseOption` или другого DTO.
+
+Используй концепт `Purchase Configuration` для описания выбранного
+способа покупки Product.
+
+Purchase Configuration пока является domain concept, а не утверждённым
+TypeScript interface.
+
+Не создавай ProductVariant только потому, что он присутствовал
+в предыдущем архитектурном предложении.
+
+---
+
+### 8.16. Weight-based Tea Purchase
+
+Весовой чай продаётся посредством выбора доступного веса.
+
+Пример:
+
+`Да Хун Пао`
+
+Available nominal weights:
+
+- 50 g;
+- 100 g;
+- 200 g;
+- 250 g.
+
+Выбранный вес влияет на:
+
+- количество товара, резервируемого из stock;
+- цену позиции;
+- identity строки корзины.
+
+Выбранный вес не изменяет SKU Product в текущей бизнес-модели.
+
+Набор доступных весов может отличаться между Product.
+
+---
+
+### 8.17. Piece-based Purchase
+
+Некоторые товары продаются в штуках.
+
+Примеры:
+
+- прессованный чай;
+- керамика;
+- аксессуары;
+- подарочные наборы.
+
+`unit = piece` само по себе не определяет правила Product.
+
+Не выводи бизнес-поведение только из единицы измерения.
+
+Например:
+
+- прессованный чай продаётся в штуках и имеет fixed physical weight;
+- чайник продаётся в штуках и может иметь volume;
+- подарочный набор продаётся в штуках и имеет composition.
+
+---
+
+## 8.18. Inventory / Stock
+
+Stock является server-authoritative business data.
+
+Frontend не должен самостоятельно определять фактический остаток.
+
+Stock имеет различную семантику для weight-based и piece-based
+товаров.
+
+### Weight-based stock
+
+Для весового продукта stock выражает доступное количество продукта
+по весу.
+
+Пример:
+
+Product:
+`Да Хун Пао`
+
+Available stock:
+`60 g`
+
+Purchase options:
+
+- 50 g — available;
+- 100 g — unavailable;
+- 200 g — unavailable;
+- 250 g — unavailable.
+
+Purchase option должна быть доступна только если текущего stock
+достаточно для выбранного веса.
+
+Количество также должно учитывать stock.
+
+Например при stock = 170 g:
+
+- 50 g × 3 может быть доступно;
+- 50 g × 4 недоступно;
+- 100 g × 1 может быть доступно;
+- 100 g × 2 недоступно.
+
+Нельзя использовать простое правило `stock > 0` для определения
+доступности весового товара.
+
+### Piece-based stock
+
+Для штучного товара stock выражает доступное количество физических
+единиц.
+
+Пример:
+
+Ceramic teapot:
+`stock = 1`
+
+Maximum selectable quantity:
+`1`
+
+Если stock = 3, максимальное количество не должно превышать 3.
+
+### Unique products
+
+Не вводи `isUnique` только для ограничения количества уникальной
+керамики, если эту задачу полностью решает stock.
+
+Например, уникальный чайник может естественным образом иметь:
+
+`stock = 1`.
+
+Добавляй отдельное понятие uniqueness только если появится
+самостоятельная бизнес-логика, которой недостаточно stock.
+
+---
+
+## 8.19. Availability
+
+Availability не должна определяться одним boolean.
+
+На уровне предметной области необходимо различать как минимум:
+
+- in stock;
+- out of stock;
+- preorder.
+
+Не фиксируй конкретный enum до получения backend contract,
+но не создавай набор противоречащих друг другу boolean states,
+если этого можно избежать.
+
+---
+
+### 8.20. Pre-order
+
+Legacy field:
+`isPreOrder`.
+
+Pre-order имеет специальный бизнес-смысл в «Столице чая».
+
+Pre-order используется для товаров, которых в данный момент нет
+в наличии и спрос на которые магазин хочет проверить до принятия
+решения о вводе/возврате товара в ассортимент.
+
+Следовательно:
+
+`stock = 0` не всегда означает одинаковое пользовательское состояние.
+
+Пример:
+
+`stock = 0 + preorder disabled`
+→ обычное отсутствие товара.
+
+`stock = 0 + preorder enabled`
+→ сценарий предзаказа.
+
+Не интерпретируй preorder автоматически как обычную продажу
+будущего складского поступления.
+
+Конкретная backend-механика preorder должна быть определена отдельно.
+
+---
+
+## 8.21. Pricing
+
+Pricing является server-authoritative business logic.
+
+Legacy frontend в настоящее время рассчитывает часть цены на клиенте.
+Это legacy behavior и не должно переноситься в новую архитектуру.
+
+Для весового товара цена выбранной фасовки в новой системе должна
+приходить от backend либо подтверждаться backend.
+
+Frontend не должен быть источником истины для расчёта цены.
+
+Backend может внутри рассчитывать цену из базовой стоимости или
+хранить отдельные значения — это backend implementation detail.
+
+Frontend должен работать с подтверждённым pricing result.
+
+Концептуально pricing может содержать:
+
+- base/original price;
+- final price;
+- applied discount information.
+
+Не фиксируй окончательный DTO до получения backend contract.
+
+---
+
+## 8.22. Discounts and Promotions
+
+Legacy field:
+`productDiscount`.
+
+Скидка в текущей системе задаётся в процентах.
+
+Скидки могут применяться:
+
+- к отдельной группе товаров;
+- к категории товаров;
+- через promo code к корзине.
+
+Например, promotion может применяться ко всем зелёным чаям
+или ко всем пуэрам.
+
+Скидка на Product в текущей модели распространяется на все его
+весовые фасовки.
+
+Расчёт скидок не должен выполняться frontend.
+
+Backend должен определять:
+
+- применимые promotions;
+- приоритет promotions;
+- возможность их совместного применения;
+- итоговую скидку;
+- final price.
+
+Frontend отвечает за отображение результата.
+
+Не распространяй legacy `productDiscount` как фундаментальное поле
+Product, если backend model представляет promotion иначе.
+
+---
+
+## 8.23. Favorites
+
+Legacy field:
+`isWishedProduct`.
+
+Favorite status не является внутренней характеристикой Product.
+
+Это user/session state, описывающее отношение текущего пользователя
+к Product.
+
+Один и тот же Product может быть favorite для одного пользователя
+и не быть favorite для другого.
+
+Не включай `isWishedProduct` в фундаментальную domain model Product
+только потому, что legacy frontend получает это значение вместе
+с Product.
+
+Конкретный механизм хранения favorites будет определён после
+получения backend/session contract.
+
+---
+
+## 8.24. Gift Sets
+
+Подарочный набор является полноценным самостоятельным Product.
+
+Gift Set имеет собственные:
+
+- id;
+- SKU;
+- title;
+- slug;
+- price;
+- stock;
+- availability;
+- media/content;
+- другие применимые характеристики Product.
+
+Gift Set не является динамическим bundle, который автоматически
+собирается из текущих розничных остатков входящих товаров.
+
+Товар для подарочных наборов резервируется отдельно.
+
+Следовательно, retail stock отдельного чая и stock Gift Set
+являются независимыми inventory quantities.
+
+Изменение розничного stock входящего Product не должно автоматически
+изменять stock готового Gift Set.
+
+---
+
+### 8.25. Gift Set Composition
+
+Gift Set может содержать `composition`, описывающий входящие в набор
+товары.
+
+Legacy field:
+`productGiftSet`.
+
+Не считай legacy array окончательной моделью composition.
+
+Концептуально:
+
+Gift Set Product
+→ Composition Items
+→ referenced Products.
+
+`CompositionItem` может в будущем содержать дополнительные данные,
+например количество или конкретную конфигурацию входящего товара.
+
+Не фиксируй окончательную структуру до получения backend contract.
+
+---
+
+### 8.26. Reverse Gift Set Relation
+
+Для отдельного Product может быть полезно получать список Gift Set,
+в которые он входит.
+
+Пример:
+
+`Да Хун Пао`
+→ входит в `Мастерская вкуса`
+→ входит в другой Gift Set.
+
+Эта связь может использоваться для:
+
+- cross-sell;
+- рекомендаций;
+- блока «Входит в наборы» на ProductPage.
+
+Не создавай два независимых вручную поддерживаемых источника истины:
+
+- GiftSet → Products;
+- Product → GiftSets.
+
+Backend/data model должен иметь один авторитетный relationship.
+
+Обратная связь Product → GiftSets должна вычисляться или
+предоставляться API на основании этого relationship.
+
+---
+
+# 8.27. Cart Domain Rules
+
+Cart является отдельной domain area и не является локальным
+представлением Product.
+
+Cart должен быть server-authoritative.
+
+Frontend может использовать optimistic/local state для UX только
+при условии последующей серверной валидации.
+
+Backend является источником истины для:
+
+- availability;
+- stock;
+- current price;
+- discounts;
+- promo codes;
+- cart totals;
+- delivery-related totals;
+- возможности оформления заказа.
+
+---
+
+### 8.28. CartItem Identity
+
+Строка корзины определяется не только Product.
+
+Для товаров с выбираемой конфигурацией логическая identity строки:
+
+`Product + selected Purchase Configuration`.
+
+Пример:
+
+`Да Хун Пао + 50 g`
+
+и
+
+`Да Хун Пао + 100 g`
+
+являются разными CartItem.
+
+При этом они относятся к одному Product и имеют один SKU
+в текущей бизнес-модели.
+
+---
+
+### 8.29. Changing Weight Inside Cart
+
+Пользователь должен иметь возможность изменить выбранный вес
+весового Product непосредственно в корзине.
+
+Не заставляй пользователя возвращаться на ProductPage только для
+изменения фасовки.
+
+Пример:
+
+Cart:
+
+- `Да Хун Пао — 50 g × 1`;
+- `Да Хун Пао — 100 g × 1`.
+
+Пользователь изменяет первую строку:
+
+`50 g → 100 g`.
+
+Если Cart уже содержит строку того же Product с resulting Purchase
+Configuration `100 g`, строки должны быть объединены.
+
+Результат:
+
+`Да Хун Пао — 100 g × 2`.
+
+Не оставляй две идентичные строки CartItem после изменения
+Purchase Configuration.
+
+---
+
+### 8.30. Cart Merge Rule
+
+При изменении Purchase Configuration или добавлении товара:
+
+если Cart уже содержит:
+
+- тот же Product;
+- ту же resulting Purchase Configuration;
+
+Cart должен объединить строки путём увеличения quantity.
+
+Концептуально:
+
+`same Product + same Purchase Configuration = one CartItem`.
+
+Это business rule, а не только UI behavior.
+
+Окончательное объединение и проверка должны подтверждаться backend.
+
+---
+
+### 8.31. Cart Stock Validation
+
+Cart должен учитывать фактический stock.
+
+Для weight-based Product суммарный запрошенный вес не должен
+превышать доступный stock.
+
+Для piece-based Product суммарное quantity не должно превышать
+доступное количество физических единиц.
+
+Наличие Product в Cart не гарантирует, что тот же stock будет
+доступен позже.
+
+Backend должен повторно валидировать Cart при изменениях и checkout.
+
+---
+
+### 8.32. Cart Recalculation
+
+Сохранённые ранее:
+
+- price;
+- discount;
+- availability;
+- stock-derived limits;
+
+не должны считаться постоянной истиной.
+
+При восстановлении Cart и перед оформлением заказа backend должен
+иметь возможность вернуть актуальное состояние.
+
+Пример:
+
+пользователь добавил вчера:
+
+`Да Хун Пао — 100 g × 2` со скидкой 15%.
+
+Сегодня:
+
+- stock изменился;
+- promotion закончилась.
+
+Frontend должен отображать актуальные данные backend, а не
+продолжать использовать сохранённую локальную цену и скидку.
+
+---
+
+# 8.33. Non-negotiable Product Business Rules
+
+Следующие правила считаются зафиксированными бизнес-инвариантами
+проекта на текущем этапе.
+
+Не изменяй их без явного изменения требований.
+
+1. `Country` и `Origin` — разные сущности.
+
+2. `Mood` и `Taste` — разные сущности.
+
+3. Один Product может иметь до 3 Mood.
+
+4. Один Product может иметь до 3 Taste.
+
+5. SKU относится к Product и в текущей бизнес-модели не меняется
+   при выборе другой весовой фасовки.
+
+6. Набор доступных весов может отличаться между Product и не должен
+   быть глобально hardcoded.
+
+7. Для weight-based Product доступность конкретного веса зависит
+   от фактического остатка продукта.
+
+8. `stock > 0` недостаточно для определения доступности weight option.
+
+9. Для piece-based Product количество ограничивается фактическим stock.
+
+10. Не использовать `unit = piece` как достаточное основание для
+    определения поведения Product.
+
+11. Fixed physical weight и sale quantity являются разными понятиями.
+
+12. Volume и sale unit являются разными понятиями.
+
+13. Для некоторых весовых Product номинальный и фактический вес
+    могут немного различаться.
+
+14. Frontend не является источником истины для price calculation.
+
+15. Frontend не является источником истины для discount calculation.
+
+16. Frontend не является источником истины для stock.
+
+17. Backend должен подтверждать final price, discounts и availability.
+
+18. Category/group promotions могут применяться к нескольким Product.
+
+19. Promo code является cart-level promotion mechanism и должен
+    обрабатываться backend business logic.
+
+20. `isWishedProduct` является user/session state, а не свойством
+    фундаментальной Product domain model.
+
+21. Pre-order и обычное отсутствие товара являются разными
+    пользовательскими состояниями.
+
+22. Gift Set является самостоятельным Product.
+
+23. Gift Set имеет собственный SKU, slug, price и stock.
+
+24. Stock Gift Set независим от retail stock входящих в него Product,
+    поскольку товар для наборов резервируется отдельно.
+
+25. Product может иметь relation к Gift Set, в которые он входит,
+    но эта обратная связь не должна становиться вторым независимым
+    источником истины.
+
+26. Пользователь может менять вес weight-based Product непосредственно
+    в Cart.
+
+27. CartItem определяется комбинацией Product и выбранной Purchase
+    Configuration.
+
+28. Одинаковые Product + Purchase Configuration должны объединяться
+    в одну CartItem с суммированием quantity.
+
+29. Cart должен повторно валидироваться backend при изменении
+    конфигурации, количества и перед checkout.
+
+30. Cart является server-authoritative.
+
+---
+
+## 8.34. Legacy → Domain Mapping
+
+Legacy frontend fields являются источником понимания существующей
+системы, но не определяют новую архитектуру напрямую.
+
+Примерное соответствие:
+
+| Legacy field | Domain concept |
+| --- | --- |
+| `productTitle` | `Product.title` |
+| `productUid` | `Product.id` |
+| `productSlug` | `Product.slug` |
+| `productSKU` | `Product.sku` |
+| `productPrice` | `Pricing` |
+| `productDiscount` | `Promotion/Pricing` |
+| `productImg` | `ProductMedia` |
+| `productUnit` | `Purchase Configuration / Sale Unit` |
+| `productWeightByUnit` | Weight/Purchase Configuration depending on product type |
+| `productMoodsSetting` | `Mood[]` |
+| `productCategoryTitle` | `Category.title` |
+| `productCategorySlug` | `Category.slug` |
+| `productCategoryYmCode` | Category analytics metadata |
+| `productCategoryId` | `Category.id` |
+| `productCountryTitle` | legacy geography data; map to Country/Origin after backend analysis |
+| `productCountrySlug` | legacy geography data; map after backend analysis |
+| `productCountryIcon` | `Country.icon` where applicable |
+| `productCountryBG` | `Country.backgroundImage` where applicable |
+| `productTastes` | `Taste[]` |
+| `productYear` | harvest year |
+| `productPreparingTime` | `BrewingGuide` |
+| `productTemperature` | `BrewingGuide` |
+| `productCountPerPiece` | `BrewingGuide` |
+| `productAmountUses` | `BrewingGuide` |
+| `isWishedProduct` | user/session Favorite state |
+| `isPreOrder` | Availability / Pre-order |
+| `productGiftSet` | Gift Set Composition |
+
+Не используй эту таблицу как API schema.
+
+После получения backend API необходимо отдельно сопоставить:
+
+`Legacy model → Backend DTO → Domain model → UI model`.
+
+Если backend DTO не совпадает с domain model, используй adapter layer
+вместо распространения backend-specific naming по React-компонентам.
+
+---
+
+## 8.35. Open Product Domain Questions
+
+Следующие вопросы намеренно остаются открытыми до получения
+дополнительной бизнес-информации или backend contract:
+
+- окончательная структура Product Type;
+- окончательная структура Purchase Configuration;
+- конкретный формат Pricing DTO;
+- конкретный формат Stock DTO;
+- способ резервирования stock;
+- конкурентное изменение stock несколькими пользователями;
+- механизм хранения Cart;
+- guest Cart и authenticated Cart;
+- механизм Favorites;
+- точные promotion priority/stacking rules;
+- promo code rules;
+- фактический вес товаров с approximate weight;
+- окончательная структура GiftSet CompositionItem;
+- окончательная geography hierarchy;
+- CMS/content model;
+- backend validation/error contract.
+
+Не придумывай ответы на эти вопросы.
+
+Если реализация конкретной задачи зависит от одного из них:
+
+1. определи, действительно ли решение необходимо прямо сейчас;
+2. изучи доступный backend/API, если он уже предоставлен;
+3. если данных недостаточно — сообщи об открытом вопросе;
+4. не превращай временное предположение в постоянное архитектурное
+   решение без подтверждения.
 
 ---
 
@@ -570,28 +1636,56 @@ Backend должен оставаться источником истины дл
 
 ---
 
-## 19. Текущие открытые вопросы
+## 19. Утверждённые правила и открытые вопросы
 
-На данный момент ещё требуют подтверждения:
+### УТВЕРЖДЕНО на уровне business/domain rules
 
-- полный backend/API contract;
-- окончательная domain model Product;
-- ProductVariant и правила вариантов;
-- бизнес-характеристики чая;
-- Taste и Mood;
-- хранение корзины;
-- хранение избранного;
-- пользовательская сессия;
-- необходимость авторизации;
-- доставка;
-- оплата;
-- расчёт скидок;
-- остатки;
-- CMS/content source;
+- Product Domain Model v0.1 (раздел 8);
+- различие Country и Origin;
+- различие Mood и Taste;
+- бизнес-правила weight-based и piece-based products;
+- Stock и Availability rules;
+- Pricing/Discount responsibility;
+- Pre-order semantics;
+- Gift Set semantics;
+- Cart business rules.
+
+Эти правила описаны в разделе 8 и не требуют повторного утверждения
+при определении технических моделей. Не изменяй их без явного изменения
+бизнес-требований.
+
+Purchase Configuration до анализа backend API используется только как
+domain concept. ProductVariant не является заранее предполагаемой
+domain entity; его упоминание в прежнем архитектурном предложении
+не является основанием для создания такой модели.
+
+### ОСТАЁТСЯ ОТКРЫТЫМ
+
+- конкретная TypeScript-структура Product и окончательная структура Product Type;
+- конкретная структура Purchase Configuration;
+- полный backend API contract;
+- API DTO, включая конкретные форматы Pricing DTO и Stock DTO;
+- mapping Backend DTO → Domain Model;
+- пользовательская session/auth, включая необходимость авторизации;
+- storage Cart/Favorites, включая guest Cart и authenticated Cart;
+- delivery/payment contracts;
+- способ резервирования stock и конкурентное изменение stock несколькими пользователями;
+- точные promotion priority/stacking rules и promo code rules;
+- фактический вес товаров с approximate weight;
+- окончательная структура GiftSet CompositionItem;
+- окончательная geography hierarchy;
+- CMS/content model и production media source;
+- backend validation/error contract;
+- остальные вопросы, которые Product Domain Model v0.1 явно оставляет открытыми;
 - окончательная карта старых и новых URL;
 - состав первой версии продукта.
 
-Не придумывай ответы на эти вопросы.
+Открытые технические структуры и контракты не отменяют утверждённые
+business/domain rules. После получения backend API отдельно сопоставь
+его с Product Domain Model v0.1. Не создавай API models или backend DTO
+на основании одной domain specification.
+
+Не придумывай ответы на открытые вопросы.
 
 По мере получения новой информации соответствующие разделы AGENTS.md должны уточняться.
 
