@@ -1,0 +1,11 @@
+:root {
+  --color-header-green: #1e3932;
+  --color-cream-gold: #eabc6f;
+  --color-header-text: #fff;
+  --color-header-border: rgb(255 255 255 / 20%);
+  --header-bar-height: 80px;
+  --header-navigation-height: 80px;
+  --header-gutter: 40px;
+  --header-blur: 12.5px;
+  --motion-duration: 180ms;
+}
