@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { siteContacts } from '@/lib/site-data';
 import { HeaderBehavior } from './HeaderBehavior';
 import { favoritesNavigation, headerCategories, type HeaderCategory } from './header-data';
 import styles from './SiteHeader.module.css';
@@ -11,8 +12,8 @@ export function SiteHeader({ categories = headerCategories }: SiteHeaderProps) {
     <div className={styles.headerSpace}>
       <HeaderBehavior categories={categories}
         contacts={<div className={styles.contacts}>
-          <a href="mailto:info@stolica-chaya.ru">info@stolica-chaya.ru</a>
-          <a href="tel:+74957776021">+7 (495) 777-60-21</a>
+          <a href={siteContacts.email.href}>{siteContacts.email.label}</a>
+          <a href={siteContacts.phone.href}>{siteContacts.phone.label}</a>
         </div>}
         logo={<Link href="/" className={styles.logo} aria-label="Столица чая — главная">
           <picture>

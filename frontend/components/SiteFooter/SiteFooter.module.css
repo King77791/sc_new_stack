@@ -1,0 +1,46 @@
+.footer { flex: none; padding: 40px 16px; background: var(--color-footer-background); color: white; font-size: 24px; line-height: 1.25; }
+.content { display: flex; flex-wrap: wrap; gap: 40px; max-width: 1530px; margin-inline: auto; align-items: flex-start; }
+.navigation { flex: 1 1 340px; min-width: 0; max-width: 750px; padding-inline: 16px; display: flex; flex-direction: column; gap: 16px; }
+.catalog { display: flex; flex-direction: column; gap: 8px; }
+.footer a { color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.footer a:hover { text-decoration: underline; text-underline-offset: 5px; }
+.footer a:focus-visible { outline: 2px solid var(--color-cream-gold); outline-offset: 4px; border-radius: 4px; }
+.footer ul { list-style: none; padding: 0; margin: 0; }
+.footer .categories { display: flex; flex-wrap: wrap; gap: 16px 24px; padding-block: 8px; max-width: 620px; color: var(--color-cream-gold); font-weight: 500; }
+.categories a { opacity: .48; }
+.categories a:hover, .categories a:focus-visible { opacity: 1; }
+.divider { height: 2px; background: rgb(217 217 217 / 20%); max-width: 520px; width: 100%; }
+.navigationBottom { position: relative; display: flex; justify-content: space-between; align-items: flex-start; min-height: 200px; }
+.navigationBottom nav { position: relative; z-index: 1; min-width: 0; }
+.links { display: flex; flex-direction: column; gap: 16px; }
+.links a { display: inline-block; min-height: 32px; }
+/* The supplied WebP already contains the Figma watermark opacity in its alpha. */
+.emblem { width: 200px; height: 200px; flex: none; pointer-events: none; }
+.details { flex: 1 1 340px; min-width: 0; max-width: 600px; display: flex; flex-direction: column; gap: 20px; }
+.contacts { display: flex; flex-direction: column; gap: 16px; font-style: normal; }
+.phone { display: flex; flex-direction: column; gap: 4px; }
+.phone a, .handle { font-size: 32px; }
+.phone p { font-size: 18px; opacity: .6; margin: 0; }
+.socialRow { display: flex; flex-wrap: wrap; gap: 8px 19px; align-items: center; }
+.socialLinks { display: flex; flex-wrap: wrap; gap: 20px; }
+.socialLinks a, .socialLinks img { display: block; }
+.socialLinks a { opacity: .5; }
+.socialLinks a:hover, .socialLinks a:focus-visible { opacity: 1; }
+
+@media (max-width: 1279px) {
+  .footer { padding-inline: 40px; }
+  .phone a, .handle { font-size: 24px; }
+  .emblem { position: absolute; right: 0; top: 0; }
+}
+
+/* Two 340px columns plus their gap no longer fit below this width. */
+@media (max-width: 799px) {
+  .footer { padding-inline: 16px; font-size: 20px; }
+  .content { flex-direction: column; }
+  .navigation, .details { flex: none; width: 100%; max-width: none; }
+  .categories { font-size: 18px; }
+  .links { font-size: 24px; }
+  .navigationBottom { min-height: 160px; }
+  .emblem { width: 160px; height: 160px; }
+  .socialRow { flex-direction: column; align-items: flex-start; }
+}

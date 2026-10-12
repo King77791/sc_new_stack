@@ -1,0 +1,25 @@
+.form { display: flex; flex-direction: column; gap: 16px; }
+.heading { font-size: 24px; line-height: 1.25; }
+.field { display: flex; align-items: center; gap: 12px; height: 60px; max-width: 520px; padding-inline: 16px; border-radius: 8px; background: rgb(255 255 255 / 20%); }
+.field input { flex: 1; min-width: 0; padding: 0; border: 0; font: inherit; font-size: 20px; color: white; background: transparent; }
+.field input::placeholder { color: rgb(255 255 255 / 30%); opacity: 1; }
+.field button { display: grid; place-items: center; flex: none; width: 36px; height: 36px; margin-right: -4px; padding: 4px; border: 0; background: transparent; cursor: pointer; opacity: .8; }
+.field button:hover, .field button:focus-visible { opacity: 1; }
+.field button:active { transform: translateX(1px); }
+.consent { display: flex; align-items: center; gap: 9px; font-size: 18px; line-height: 1.25; }
+.consent input { appearance: none; display: grid; place-items: center; flex: none; width: 20px; height: 20px; margin: 0; border: 1.333px solid white; border-radius: 5.333px; background: rgb(255 255 255 / 60%); cursor: pointer; }
+.consent input:checked::after { content: ''; width: 5px; height: 10px; border: solid var(--color-footer-background); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.consent label { cursor: pointer; }
+.consent a { color: inherit; text-decoration: none; }
+.consent a:hover { text-decoration: underline; }
+.form :is(input, button, a):focus-visible { outline: 2px solid var(--color-cream-gold); outline-offset: 4px; }
+.field input:user-invalid { outline: 2px solid var(--color-cream-gold); outline-offset: 4px; }
+.notice { margin: 0; font-size: 16px; line-height: 1.25; }
+@media (max-width: 799px) {
+  .heading { font-size: 20px; }
+  .consent { font-size: 16px; }
+}
+@media (forced-colors: active) {
+  .consent input { appearance: auto; }
+  .consent input:checked::after { content: none; }
+}

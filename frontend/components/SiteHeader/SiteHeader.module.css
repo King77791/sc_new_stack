@@ -125,6 +125,17 @@
   backdrop-filter: blur(var(--header-blur));
 }
 .menu[hidden] { display: none; }
+.menuArt { position: absolute; inset: 0; overflow: clip; pointer-events: none; }
+
+@media (min-width: 1280px) {
+  .menu {
+    max-height: calc(100dvh - var(--header-bar-height) - var(--header-navigation-height));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+}
+
 .desktopCatalog {
   position: relative;
   z-index: 1;

@@ -58,8 +58,10 @@ export function MainNavigation({ categories, panel, hidden, onPanelChange, onCat
         </nav>
         <div id={menuId} className={styles.menu} hidden={!open}>
           {category && <>
-            <div className={styles.categoryArt} aria-hidden="true" data-accessories={!!category.accessories}>
-              <Image key={category.image} src={category.image} width={600} height={365} alt="" />
+            <div className={styles.menuArt} aria-hidden="true">
+              <div className={styles.categoryArt} data-accessories={!!category.accessories}>
+                <Image key={category.image} src={category.image} width={600} height={365} alt="" />
+              </div>
             </div>
             <nav className={styles.desktopCatalog} aria-label="Каталог">
               <div className={styles.categories}>

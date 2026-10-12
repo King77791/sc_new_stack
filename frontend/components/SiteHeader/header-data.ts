@@ -1,3 +1,6 @@
+import { catalogCategories } from '@/lib/site-data';
+export { mainNavigationItems } from '@/lib/site-data';
+
 // Header presentation props, not domain entities or backend DTOs.
 export type CatalogItem = { title: string; slug: string };
 export type HeaderCategory = {
@@ -13,13 +16,6 @@ export const favoritesNavigation = {
   href: '/favorites', label: 'Избранное', icon: '/icons/favorite_ic.svg',
 } as const;
 
-export const mainNavigationItems = [
-  { label: 'Каталог', href: '/catalog' },
-  { label: 'Доставка и оплата', href: '/delivery-payment' },
-  { label: 'События', href: '/events' },
-  { label: 'Контакты', href: '/contacts' },
-] as const;
-
 // Explicit UI prototype slugs; neither URLs nor grouping claim production data.
 const temporaryTeaItems: readonly CatalogItem[] = [
   { title: 'Цзинь Ло', slug: 'demo-jin-luo' },
@@ -31,14 +27,14 @@ const temporaryTeaItems: readonly CatalogItem[] = [
 
 // Category slugs are temporary route segments pending approved navigation data.
 export const headerCategories: readonly HeaderCategory[] = [
-  { label: 'Черный', slug: 'black', image: '/images/black_tea_image.png', items: temporaryTeaItems },
-  { label: 'Зеленый', slug: 'green', image: '/images/green_tea_image.png', items: [] },
-  { label: 'Улун', slug: 'oolong', image: '/images/oolung_tea_image.png', items: [
+  { ...catalogCategories[0], image: '/images/black_tea_image.png', items: temporaryTeaItems },
+  { ...catalogCategories[1], image: '/images/green_tea_image.png', items: [] },
+  { ...catalogCategories[2], image: '/images/oolung_tea_image.png', items: [
     { title: 'Габа Улун из Дун Дин: Гармония гор', slug: 'demo-gaba-dong-ding' },
   ] },
-  { label: 'Пуэр', slug: 'puer', image: '/images/puer_tea_image.png', items: [] },
-  { label: 'Красный', slug: 'red', image: '/images/red_tea_image.png', items: [] },
-  { label: 'Белый', slug: 'white', image: '/images/white_tea_image.png', items: [] },
-  { label: 'Подарочные наборы', slug: 'gifts', image: '/images/gift_set_image.png', items: [] },
-  { label: 'Аксессуары', slug: 'accessories', image: '/images/accessories_image.png', accessories: true, items: [] },
+  { ...catalogCategories[3], image: '/images/puer_tea_image.png', items: [] },
+  { ...catalogCategories[4], image: '/images/red_tea_image.png', items: [] },
+  { ...catalogCategories[5], image: '/images/white_tea_image.png', items: [] },
+  { ...catalogCategories[6], image: '/images/gift_set_image.png', items: [] },
+  { ...catalogCategories[7], image: '/images/accessories_image.png', accessories: true, items: [] },
 ];

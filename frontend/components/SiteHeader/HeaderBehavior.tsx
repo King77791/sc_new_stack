@@ -97,10 +97,16 @@ export function HeaderBehavior({ contacts, logo, actionLinks, categories }: Head
       onPointerLeave={event => {
         if (event.pointerType !== 'mouse') return;
         setHovered(false);
-        if (panel === 'catalog' && openedWithPointer.current) setPanel(null);
+        const catalogHasKeyboardFocus = keyboardFocus
+          && event.currentTarget.querySelector(`.${styles.desktopCatalog}`)?.contains(document.activeElement);
+        if (panel === 'catalog' && openedWithPointer.current && !catalogHasKeyboardFocus) setPanel(null);
       }}
       onFocusCapture={event => setKeyboardFocus(event.target.matches(':focus-visible'))}
       onBlurCapture={event => {
+        const catalog = event.target.closest(`.${styles.desktopCatalog}`);
+        if (panel === 'catalog' && catalog && !catalog.contains(event.relatedTarget as Node | null)) {
+          setPanel(null);
+        }
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           setKeyboardFocus(false);
           setPanel(null);

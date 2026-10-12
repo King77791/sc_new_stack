@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { SiteHeader } from '@/components/SiteHeader/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter/SiteFooter';
 import './globals.css';
 
 const ceraPro = localFont({
@@ -13,8 +14,11 @@ const ceraPro = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Сервис на SSR',
-  description: 'Минимальный каркас приложения на Next.js и PHP',
+  title: {
+    default: 'Столица чая',
+    template: '%s | Столица чая',
+  },
+  description: 'Натуральный китайский чай и исинская керамика. Столица чая — управляй состоянием.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -22,7 +26,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="ru">
       <body className={ceraPro.variable}>
         <SiteHeader />
-        {children}
+        <div className="app-content">{children}</div>
+        <SiteFooter />
       </body>
     </html>
   );
