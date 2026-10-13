@@ -1,0 +1,15 @@
+.demo {
+  padding: 40px 16px 64px;
+  background: #1e3932;
+  color: #fff;
+}
+.demo > h1 { font-size: 28px; letter-spacing: normal; font-weight: 500; }
+.demo > p { max-width: 680px; font-size: 16px; line-height: 1.5; opacity: 0.8; }
+.demo section { margin-top: 36px; }
+.demo h2 { font-size: 22px; font-weight: 500; }
+.fullGrid, .compactGrid, .boundaryGrid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; }
+.fullGrid > .example { width: min(360px, 100%); }
+.compactGrid > .example { width: 170px; }
+.boundaryGrid > .example { width: 320px; }
+.exampleLabel { margin: 0 0 12px; font-size: 14px; font-weight: 400; opacity: 0.7; }
+.compactGrid { column-gap: 3px; row-gap: 24px; }

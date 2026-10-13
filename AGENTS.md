@@ -443,6 +443,13 @@ Analytics metadata не должна определять архитектуру
 
 `Country` и `Origin` являются разными сущностями.
 
+В пользовательской терминологии Country = «Страна», Origin = «Регион» /
+более точное происхождение. Например: Китай → Юньнань, Тайвань → Алишань.
+Континент не заменяет Country или Origin в текущей Product domain model.
+Не превращать неоднозначные Figma-подписи вроде «Африка» автоматически
+в domain semantics. Будущая Catalog filtering/navigation должна различать
+Country и Origin; окончательные routes определяются на этапе Catalog.
+
 Country используется как самостоятельный классификатор товара и
 как часть визуального представления региона на клиенте.
 
@@ -520,6 +527,8 @@ Legacy field:
 `productMoodsSetting`.
 
 Один Product может быть связан максимум с 3 Mood.
+
+Для Tea утверждено от 1 до 3 Mood; для Ceramics Mood отсутствуют.
 
 Mood описывает состояние, для которого продукт может быть выбран
 пользователем.
@@ -1008,6 +1017,12 @@ Favorite status не является внутренней характерис�
 Конкретный механизм хранения favorites будет определён после
 получения backend/session contract.
 
+До API разрешено только локальное presentation/interactivity testing:
+empty → click → filled и filled → click → empty. После reload состояние
+может возвращаться к исходным mock data. Не создавать fake API,
+localStorage persistence, фиктивную server synchronization или ложную
+бизнес-логику Favorites.
+
 ---
 
 ## 8.24. Gift Sets
@@ -1111,6 +1126,11 @@ Backend является источником истины для:
 - cart totals;
 - delivery-related totals;
 - возможности оформления заказа.
+
+До появления Cart/API разрешено только необходимое локальное
+presentation/interactivity behavior для тестирования ProductCard.
+Не создавать fake Cart API, localStorage Cart, фиктивную server
+persistence или frontend-authoritative commerce logic.
 
 ---
 
@@ -1402,6 +1422,133 @@ Legacy frontend fields являются источником понимания 
 
 ---
 
+## 8.36. ProductCard — общий Product domain component
+
+### УТВЕРЖДЕНО: назначение и семантика
+
+ProductCard — единый reusable Product domain component для DailyTop,
+Catalog, filtered Catalog results и других мест отображения Product.
+Не создавать DailyTopProductCard только из-за первого использования
+в DailyTop. Не создавать отдельные MobileProductCard, CeramicProductCard
+или PreorderProductCard как domain components только из-за presentation
+differences. Responsive/state variants сохраняют один component concept.
+
+У ProductCard есть как минимум две responsive/layout presentations:
+full / desktop и compact / tablet-mobile. Presentation определяется
+доступным layout/context, а не механическим условием `viewport === mobile`.
+DailyTop использует full на desktop и standard compact на tablet/mobile.
+
+ProductCard содержит независимые interactive/navigation zones:
+
+- свободная верхняя Product area / Product image и title → Product page;
+- Region/Origin control → Catalog с соответствующим Region filter;
+- Mood control → Catalog с соответствующим Mood filter;
+- Favorite и Cart → UI actions;
+- selectable Purchase Configuration / Weight в full presentation → UI state;
+- weight в compact presentation → informational content без interaction.
+
+Не делать всю карточку одной ссылкой с вложенными actions/ссылками.
+Вложенные `<a>` запрещены. Visual layering через position / absolute /
+z-index допустим при корректной DOM semantics.
+Утверждённый пример Mood navigation: `/catalog/mood/immunity`.
+Точные Region routes не придумывать до утверждения Catalog routing.
+Конкретный mapping данных Country / Origin к UI зависит от Catalog/API
+architecture; различие сущностей и терминология из разделов 8.5–8.6
+сохраняются. Figma-подписи не определяют domain semantics.
+
+### УТВЕРЖДЕНО: presentation requirements
+
+- Product image присутствует всегда и имеет согласованное позиционирование
+  внутри ProductCard согласно design system.
+- Mood использует модель раздела 8.7 и служит navigation/filter entry point.
+  Full presentation показывает icons, hover/focus presentation и tooltip
+  с названием Mood; compact presentation скрывает Mood icons.
+  Для Ceramics зарезервированная Mood area может оставаться свободной.
+- Full presentation имеет regional visual/background и interactive
+  Region/Origin entry point. Regional visual по умолчанию скрыт и появляется
+  при hover карточки с opacity/transform animation. Compact presentation
+  постоянно показывает только Country в компактном виде сверху.
+  Origin в compact ProductCard не отображается и не занимает отдельную
+  строку/место. Это presentation rule: Country ≠ Origin сохраняется,
+  Origin остаётся отдельным data/domain field для других contexts.
+- Compact presentation использует compact image geometry, постоянно
+  доступный Favorite сверху, price перед title и широкую нижнюю Cart action
+  bar. Title может переноситься согласно compact design. Hover-only desktop
+  behavior не переносится на touch.
+- Title является ссылкой на Product page. В full default длинное название
+  ограничено доступной областью и заканчивается `...`. Marquee запускается
+  только при hover непосредственно на title, только если оно не помещается.
+  Hover всей карточки не запускает marquee. После ухода pointer с title
+  движение прекращается и возвращается truncated/ellipsis presentation.
+  Keyboard/accessibility equivalent получения полного названия определяется
+  при implementation с сохранением указанного mouse behavior. Compact
+  использует собственное title behavior без автоматического переноса
+  desktop hover-marquee на touch.
+- Weight-based Tea в full presentation позволяет выбрать доступную
+  Purchase Configuration прямо в карточке, без перехода на Product Page.
+  При выборе configuration немедленно меняются selected configuration
+  и display price на готовое значение для неё.
+- В compact weight не является интерактивным control: например `50 г`
+  представляет текущий/представляемый вес. Пользователь не меняет Purchase
+  Configuration внутри compact ProductCard. На mobile её изменение
+  выполняется на Product Page либо через отдельную Future mobile panel.
+- Fixed-weight / Pressed Tea в full использует visual area/style обычного
+  Weight control, но с фиксированным значением (например `250 г`), readonly,
+  без dropdown arrow и interaction. В compact это informational weight text
+  без interaction. Не создавать Purchase Configuration для имитации dropdown.
+  Применяются правила разделов 8.10, 8.15–8.17.
+- Ceramics сохраняет общую full geometry, image, title, price, Favorite
+  и Cart, но не имеет Mood и Weight/Purchase Configuration. Отсутствующие
+  области не заполняются выдуманными данными. Regional presentation может
+  сохраняться; full hover раскрывает regional background/Country, Favorite
+  и соответствующие action states согласно design. Compact Ceramics
+  использует обычную compact карточку: только Country и Favorite сверху,
+  image, price, title, без Weight, с нижней `В корзину` action bar.
+- Price отображается для selected Purchase Configuration на основании
+  готовых presentation/server-confirmed values для доступных configurations
+  (раздел 8.21). До API допустимы только mock presentation values для UI.
+  Frontend не вычисляет price: `basePrice * weight` и аналогичные pricing
+  formulas запрещены; немедленная смена display price не меняет серверную
+  ответственность за pricing.
+
+ProductCard обязан поддерживать Preorder с семантикой раздела 8.20.
+Business invariant: Preorder Product нельзя добавить в Cart.
+
+- Full: Purchase Configuration/Weight area заменяется Preorder status;
+  Cart отсутствует; Favorite перемещается в основную action position,
+  обычно занимаемую Cart.
+- Compact: informational weight сохраняется, если применим к Product;
+  Favorite остаётся в постоянной compact position сверху; нижняя Cart
+  action bar заменяется presentation/action bar `Предзаказ`, без обычного
+  Cart action. Не делать full и compact Preorder визуально одинаковыми.
+
+Preorder presentation использует существующий Cera Pro Regular 400.
+Не подключать Bold ради Preorder; Bold в Figma является неактуальным
+presentation значением. Ограничение DailyTop описано в 21.4 и не отменяет
+поддержку Preorder общим ProductCard.
+
+### Implementation details / Open / Future
+
+Desktop/tablet/mobile могут перестраивать расположение элементов,
+regional presentation, Mood visibility, actions, typography и размеры.
+Точные размеры/positioning уточняются по Figma; окончательные responsive
+breakpoints и animation/accessibility implementation не утверждены.
+Figma остаётся visual source of truth с утверждёнными уточнениями
+раздела 21.6; отдельные domain components для desktop/mobile не вводятся.
+
+Favorite и Cart mock interactions ограничены разделами 8.23 и 8.27;
+Notification system и отдельный desktop/tablet Cart Widget — будущие
+задачи вне текущего ProductCard implementation scope.
+Compact/mobile Cart допускает только минимальное локальное testing
+согласно 8.27. Mobile Cart panel и purchase configuration mobile panel —
+отдельная Future feature: не исследовать и не реализовывать их в текущем
+ProductCard/Home scope. Их architecture не утверждена; не имитировать
+backend synchronization.
+ProductCard API DTO, реальные Cart/Favorite endpoints и окончательные
+backend validation/error contracts не утверждены.
+
+---
+
 ## 9. State management
 
 Не вводи глобальный state manager без подтверждённой необходимости.
@@ -1649,8 +1796,10 @@ Backend должен оставаться источником истины дл
 - Pre-order semantics;
 - Gift Set semantics;
 - Cart business rules.
+- общий ProductCard и его navigation/state presentation rules (8.36);
+- Home PromoSection rules (раздел 21).
 
-Эти правила описаны в разделе 8 и не требуют повторного утверждения
+Эти правила описаны в разделах 8 и 21 и не требуют повторного утверждения
 при определении технических моделей. Не изменяй их без явного изменения
 бизнес-требований.
 
@@ -1766,3 +1915,203 @@ business/domain rules. После получения backend API отдельн�
 По мере получения новой информации соответствующие разделы AGENTS.md должны уточняться.
 
 Этот документ фиксирует текущие постоянные правила разработки проекта.
+
+---
+
+## 21. Home PromoSection
+
+### 21.1. УТВЕРЖДЕНО: состав и условный layout
+
+PromoSection — основной промо-блок Home Page. Он содержит обязательный
+PromoBannerSlider (всегда минимум один PromoBanner) и условный PromoSidebar.
+Sidebar существует при наличии UpcomingEventPromo (0..1) или DailyTop
+(0..1).
+
+| Состав | Desktop layout behavior |
+| --- | --- |
+| Banner + Event + DailyTop | Banner в основной области, sidebar справа, Event сверху, DailyTop ниже |
+| Banner + DailyTop | DailyTop в верхней части sidebar |
+| Banner + Event | Event сверху; место DailyTop свободно, Event не растягивается для его заполнения |
+| Только Banner | Sidebar отсутствует, Banner занимает всю доступную ширину content area |
+
+На desktop при наличии sidebar Banner занимает оставшуюся доступную ширину.
+Ширина sidebar — presentation/layout detail, не domain invariant;
+обязательная константа ширины не утверждена.
+
+На tablet / в соответствующей responsive composition Banner занимает
+отдельную строку на всю доступную ширину. Ниже располагаются Event
+и DailyTop:
+
+- Event + DailyTop: рядом; DailyTop использует compact horizontal-scroll
+  presentation из 21.4.
+- Только DailyTop: занимает всю доступную ширину под Banner.
+- Только Event: сохраняет нормальную presentation geometry; не растягивать
+  его ради отсутствующего DailyTop, если более конкретное responsive
+  решение не принято позже.
+- Нет обоих: остаётся только Banner.
+
+Не воспроизводить устаревшую tablet Figma-композицию с вертикальным
+480px sidebar под Banner слева, desktop DailyTop и большой пустой
+областью справа. Окончательные breakpoints не утверждены.
+
+### 21.2. УТВЕРЖДЕНО: PromoBanner и slider behavior
+
+PromoBanner — самостоятельная promotional entity, не Product-specific.
+Destination может вести на Product, Category, Event, другую внутреннюю
+страницу или внешний ресурс. Internal destination использует обычную
+внутреннюю навигацию; external destination открывается в новой вкладке
+с необходимыми security attributes.
+
+Весь PromoBanner — одна кликабельная ссылка. CTA внутри banner artwork
+не создаёт отдельную вложенную DOM-ссылку или button.
+
+Утверждённый presentation pattern: отдельный scalable/croppable
+background, gradient/darkening presentation и отдельный critical-content
+image. Последний содержит критически важный визуальный/текстовый контент
+и не должен нежелательно crop-иться при изменении размеров Banner.
+Разделение слоёв — сознательное UI/design решение; не объединять их
+автоматически в одну картинку. Ориентировочный размер текущего исходного
+critical-content asset — 760×760 px, не обязательный размер компонента.
+
+При одном Banner slider controls скрыты; при нескольких показываются
+pagination dots и previous/next controls. Используется autoplay с
+утверждённым delay ≈ 5 секунд. Ручное переключение не отключает autoplay
+навсегда: после interaction начинается новый период ожидания, затем
+автоматическое переключение продолжается. Delay должен быть простой
+изменяемой implementation constant/configuration без разбросанных magic
+numbers. Это не вводит admin setting или API field.
+
+Advertisement badge из Figma не входит в текущую реализацию PromoBanner:
+не реализовывать `Реклама`, info interaction, ERID UI, advertising metadata,
+advertising API/schema или специальную механику внешней рекламы.
+Текущий PromoBanner используется для собственных материалов/товаров/
+контента бренда и не предполагает стороннюю рекламную площадку.
+Сторонняя реклама и соответствующие legal/ERID requirements — отдельная
+Future business/legal feature с собственными требованиями.
+
+Точная accessibility/motion implementation (prefers-reduced-motion,
+pause/focus behavior) определяется при technical implementation с учётом
+раздела 13, не выдумывается сейчас как business rule.
+
+### 21.3. УТВЕРЖДЕНО: UpcomingEventPromo
+
+Отображается 0..1 продвигаемое событие; presentation содержит минимум
+image, title, address и destination на Event page.
+UpcomingEventPromo содержит независимые navigation zones:
+
+- Event image → Event article/page;
+- type label (`Мероприятие` / `Новость`) → соответствующая category статей;
+- Event title → Event article/page;
+- chevron → Event article/page.
+
+Не оборачивать весь UpcomingEventPromo в один `<a>` и не создавать nested
+anchors. Address — presentation content, если отдельно не определено иное.
+
+Scheduled publication, publication lifecycle, период отображения до/после
+события и manual hide управляются backend/admin.
+Event может оставаться после проведения для перехода к материалу
+о прошедшем мероприятии.
+
+Если подходит несколько событий, текущая business rule — выбрать
+ближайшее по дате. Frontend получает уже выбранное 0..1 UpcomingEventPromo
+и не реализует собственный ranking событий.
+
+### 21.4. УТВЕРЖДЕНО: DailyTop
+
+DailyTop использует общий ProductCard (8.36) с разными presentation
+mechanics в зависимости от layout. Frontend не вычисляет
+популярность, оборот или ranking, не реализует rotation algorithm
+и сохраняет backend order.
+Ожидаемый нормальный список — около 4 Product, backend может вернуть больше.
+Frontend safety limit — максимум 7 Product: при большем payload используются
+первые 7 в backend order без дополнительной sorting. Это защита UI
+от ошибочного/чрезмерного payload, не ranking mechanism.
+
+Критический business invariant: Product со статусом Preorder запрещён
+в DailyTop. Основная ответственность лежит на backend; frontend/API
+integration также учитывает invariant и не считает Preorder нормальным
+DailyTop case. Общий ProductCard при этом поддерживает Preorder (8.36).
+
+#### Desktop
+
+Одна full/desktop ProductCard за раз, user-driven slider/carousel.
+При нескольких Product показывается pagination; при одном отображается
+одна full карточка без pagination и лишних controls.
+Autoplay, таймер и автоматическая смена/ротация Product запрещены:
+пользователь взаимодействует с Purchase Configuration, Favorite и Cart,
+и автоматическая смена может прервать это взаимодействие.
+Стрелки не требуются без отдельного будущего решения; loop не является
+необходимым business requirement. Не переносить PromoBanner autoplay
+на DailyTop.
+
+#### Tablet / Mobile
+
+Начиная с tablet responsive composition DailyTop — горизонтальный список
+standard compact/mobile ProductCard: horizontal CSS scroll и native touch
+scrolling, с несколькими карточками, расположенными горизонтально.
+Desktop slider presentation, pagination dots и autoplay не используются.
+Не создавать DailyTopProductCard и не уменьшать full карточку вместо
+standard compact presentation. CSS scroll-snap — implementation option,
+не утверждённый business requirement.
+
+Figma tablet/mobile DailyTop с desktop-like карточкой, Mood icons
+и pagination — устаревшее/неисправленное состояние; не воспроизводить его.
+
+### 21.5. Backend/admin context / Open / Future
+
+В существующей/предполагаемой admin business logic PromoBanner может
+иметь название, описание, background image, critical/main image,
+destination, publication start/end. Publication lifecycle — backend/admin
+concern. Этот список — контекст, не финальная API schema, TypeScript
+interface, DTO или database schema.
+
+Future analytics предусматривает два потенциально независимых concerns:
+собственную статистику кликов/переходов для анализа эффективности промо
+и опциональную analytics marking/integration для Яндекс.Метрики.
+До соответствующего backend/API/analytics contract не имитировать отправку
+events, не создавать fake endpoint, DTO, metric identifiers или временную
+frontend analytics. Архитектура не должна препятствовать будущей интеграции.
+
+Состав DailyTop в будущем может учитывать популярные и manually promoted
+товары и backend ranking/rotation logic формирования списка; алгоритмы
+не утверждены. Это не разрешает автоматическую смену Product в UI (21.4).
+Event Map — Future direction Events domain вне текущего PromoSection scope.
+PromoBanner/DailyTop API DTO, analytics event schema, Яндекс.Метрика
+identifiers, slider library, конкретная carousel implementation,
+CSS scroll-snap, окончательные responsive breakpoints и backend validation/error contracts
+остаются Open/Future до соответствующих этапов.
+
+Не фиксировать Swiper как обязательную dependency из-за его использования
+на legacy/current site. Production site — behavior reference, не technology
+source of truth. Mobile purchase/cart panel architecture и Notification
+architecture также остаются Open/Future (8.36).
+
+Legacy сайт допускается как behavior/UX reference, включая сложную
+layering семантику ProductCard, в рамках раздела 2. При конфликте между
+утверждённым business rule, Figma и legacy behavior, не разрешённом
+утверждёнными уточнениями 21.6, остановись и зафиксируй конфликт вместо
+самостоятельного выбора трактовки. Это не отменяет
+приоритет Figma над legacy CSS для визуальных деталей из разделов 2 и 14.
+
+### 21.6. УТВЕРЖДЕНО: приоритет решений после Figma Discovery
+
+Для PromoSection/ProductCard конкретные утверждённые правила 8.36
+и 21.1–21.4 имеют приоритет над устаревшими/неисправленными Figma states.
+Соответствие этим решениям не считается ошибкой реализации относительно
+Figma:
+
+- tablet/mobile DailyTop: standard compact ProductCard + horizontal CSS
+  scroll вместо уменьшенной desktop-like карточки, Mood icons и pagination;
+- tablet PromoSection: отдельная строка Banner, ниже Event/DailyTop рядом
+  вместо вертикального sidebar с пустой областью справа;
+- compact Preorder: weight сохраняется, Favorite сверху, нижняя Preorder bar;
+- PromoBanner autoplay ≈ 5 секунд;
+- Advertisement badge исключён из текущего scope;
+- Preorder font — Cera Pro Regular 400.
+
+Full title marquee запускается только при hover непосредственно на title
+с overflow согласно 8.36, независимо от поведения Figma prototype.
+Во всех остальных visual вопросах Figma остаётся visual source of truth,
+если AGENTS.md не содержит более конкретного утверждённого правила.
+Presentation rules не являются API schema и не создают параллельную
+Product domain model.
