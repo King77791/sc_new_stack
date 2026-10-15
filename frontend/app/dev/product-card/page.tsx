@@ -17,7 +17,7 @@ export default function ProductCardDemo() {
 
   return (
     <main className={styles.demo}>
-      <h1>ProductCard · Slice 1B</h1>
+      <h1>ProductCard · Slice 1C</h1>
       <p>Временная dev-страница. Favorite, выбор веса и Cart используют только локальное UI-состояние.
         Смена веса сбрасывает локальный Cart-счётчик; перезагрузка сбрасывает все изменения.
         Навигация страны/региона ожидает утверждения Catalog routes.</p>

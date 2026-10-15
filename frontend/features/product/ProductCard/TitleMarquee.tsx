@@ -16,6 +16,7 @@ export function TitleMarquee({ href, title }: Readonly<{ href: string; title: st
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     observer.observe(content);
+    void document.fonts.ready.then(() => { if (element.isConnected) measure(); });
     measure();
     return () => observer.disconnect();
   }, [title]);

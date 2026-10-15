@@ -56,7 +56,7 @@ export function ProductCard({ data, presentation, favorite = false }: ProductCar
           </ul>
         )}
         {(data.country || (!compact && data.origin)) && (
-          // Country/Origin routing is open: presentation only, no invented destination.
+          // BLOCKED BY CATALOG ROUTING: independent labels below are future navigation boundaries; no speculative href.
           <div className={styles.geography}>
             {compact ? (
               <Image src="/icons/regions/marker.svg" alt="" width={7} height={10} />

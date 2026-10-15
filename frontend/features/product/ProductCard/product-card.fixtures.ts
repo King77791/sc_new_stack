@@ -33,6 +33,7 @@ export const productCardExamples: readonly Readonly<{
         { id: 'tea-50', label: '50 г', price: { current: '1 030 ₽' } },
         { id: 'tea-100', label: '100 г', price: { current: '1 980 ₽' } },
         { id: 'tea-200', label: '200 г', price: { current: '3 800 ₽' } },
+        { id: 'tea-250', label: '250 г', price: { current: '4 650 ₽' } },
       ] },
       price: { current: '1 030 ₽' }, purchasePresentation: 'regular',
     },
@@ -46,6 +47,7 @@ export const productCardExamples: readonly Readonly<{
       weight: { presentation: 'selectable', label: '100 г', configurations: [
         { id: 'discount-50', label: '50 г', price: { current: '640 ₽', discount: { original: '850 ₽', label: '−25%' } } },
         { id: 'discount-100', label: '100 г', price: { current: '1 200 ₽', discount: { original: '1 600 ₽', label: '−25%' } } },
+        { id: 'discount-200', label: '200 г', price: { current: '2 280 ₽', discount: { original: '3 040 ₽', label: '−25%' } } },
         { id: 'discount-250', label: '250 г', price: { current: '2 700 ₽', discount: { original: '3 600 ₽', label: '−25%' } } },
       ] },
       price: { current: '1 200 ₽', discount: { original: '1 600 ₽', label: '−25%' } },
@@ -88,8 +90,10 @@ export const productCardExamples: readonly Readonly<{
       title: 'Дарджилин Апельсиновая Долина — весенний сбор с длинным названием', image: teaImage,
       country: { label: 'Индия' }, origin: { label: 'Дарджилинг' }, moods,
       weight: { presentation: 'selectable', label: '200 г', configurations: [
+        { id: 'long-50', label: '50 г', price: { current: '2 800 ₽' } },
         { id: 'long-100', label: '100 г', price: { current: '5 400 ₽' } },
         { id: 'long-200', label: '200 г', price: { current: '10 300 ₽' } },
+        { id: 'long-250', label: '250 г', price: { current: '12 600 ₽' } },
       ] },
       price: { current: '10 300 ₽' }, purchasePresentation: 'regular',
     },

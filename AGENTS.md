@@ -615,7 +615,11 @@ Legacy `productYear` соответствует году урожая там, г
 - 200 g;
 - 250 g.
 
-Набор доступных весов может отличаться между продуктами.
+Базовые Purchase Configuration для весового Tea: 50 / 100 / 200 / 250 г.
+Фактически доступные configurations определяет backend по stock;
+frontend не вычисляет их доступность самостоятельно. Набор доступных
+весов может отличаться между продуктами; глобальный hardcoded selector
+для всех товаров не вводится.
 
 Не hardcode глобальный список доступных весов для всех чаёв.
 
@@ -1451,7 +1455,10 @@ ProductCard содержит независимые interactive/navigation zones
 Вложенные `<a>` запрещены. Visual layering через position / absolute /
 z-index допустим при корректной DOM semantics.
 Утверждённый пример Mood navigation: `/catalog/mood/immunity`.
-Точные Region routes не придумывать до утверждения Catalog routing.
+Full geography и compact Country должны вести к Catalog filtering после
+утверждения маршрутов. Final geography route contract остаётся Open/Future
+до этапа Catalog: BLOCKED BY CATALOG ROUTING. До этого сохранять отдельные
+presentation labels без fake href; точные routes не придумывать.
 Конкретный mapping данных Country / Origin к UI зависит от Catalog/API
 architecture; различие сущностей и терминология из разделов 8.5–8.6
 сохраняются. Figma-подписи не определяют domain semantics.
@@ -1488,6 +1495,8 @@ architecture; различие сущностей и терминология и
   Purchase Configuration прямо в карточке, без перехода на Product Page.
   При выборе configuration немедленно меняются selected configuration
   и display price на готовое значение для неё.
+  Dropdown открывается вверх без изменения размеров карточки; arrow
+  отражает open/closed state с учётом prefers-reduced-motion.
 - В compact weight не является интерактивным control: например `50 г`
   представляет текущий/представляемый вес. Пользователь не меняет Purchase
   Configuration внутри compact ProductCard. На mobile её изменение
@@ -1516,12 +1525,14 @@ Business invariant: Preorder Product нельзя добавить в Cart.
 
 - Full: Purchase Configuration/Weight area заменяется Preorder status;
   Cart отсутствует; Favorite перемещается в основную action position,
-  обычно занимаемую Cart.
+  обычно занимаемую Cart. Favorite скрыт по умолчанию и появляется при
+  hover/focus-within, как в обычной full карточке.
 - Compact: informational weight сохраняется, если применим к Product;
   Favorite остаётся в постоянной compact position сверху; нижняя Cart
   action bar заменяется presentation/action bar `Предзаказ`, без обычного
   Cart action. Не делать full и compact Preorder визуально одинаковыми.
 
+Preorder label отображается как `Предзаказ`, без forced uppercase.
 Preorder presentation использует существующий Cera Pro Regular 400.
 Не подключать Bold ради Preorder; Bold в Figma является неактуальным
 presentation значением. Ограничение DailyTop описано в 21.4 и не отменяет
