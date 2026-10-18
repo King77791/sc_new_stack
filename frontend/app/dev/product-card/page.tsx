@@ -20,7 +20,7 @@ export default function ProductCardDemo() {
       <h1>ProductCard · Slice 1C</h1>
       <p>Временная dev-страница. Favorite, выбор веса и Cart используют только локальное UI-состояние.
         Смена веса сбрасывает локальный Cart-счётчик; перезагрузка сбрасывает все изменения.
-        Навигация страны/региона ожидает утверждения Catalog routes.</p>
+        Страна ведёт на /catalog/region/&lt;country-slug&gt;; Catalog page пока не реализована.</p>
       <p>Проверка: hover карточки, hover/focus Mood, hover длинного title; Tab → вес → Enter → стрелки → Enter/Escape.
         В compact вес — текст, сверху только страна.</p>
       {(['full', 'compact'] as const).map((presentation) => (

@@ -77,7 +77,6 @@
 .full .geography { top: 24px; right: 8px; width: 100px; visibility: hidden; opacity: 0; text-align: center; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s; pointer-events: none; }
 .countryIllustration { height: 80px; display: grid; place-items: center; }
 .geographyLabels { display: flex; flex-direction: column; font-size: 16px; line-height: 20px; }
-.origin { font-size: 12px; opacity: 0.8; }
 
 .content { position: relative; }
 .full .content {
@@ -227,13 +226,13 @@
 /* Interaction layers extend the accepted geometry; artwork alone stays clipped. */
 .full .productImage { transform-origin: center; transition: transform 0.3s ease-in-out; }
 .full:focus-within .regionalBackground { visibility: visible; opacity: 0.15; }
-.full:focus-within .geography { visibility: visible; opacity: 1; transform: translateY(-8px); }
+.full:focus-within .geography { visibility: visible; opacity: 1; transform: translateY(-8px); pointer-events: auto; }
 .full:focus-within .favorite { opacity: 1; pointer-events: auto; }
 .full:focus-within .productImage { transform: scale(1.05); }
 .full:focus-within .cart:not(.cartAdded) { background: #2a403a; border-radius: 50%; }
 @media (hover: hover) and (pointer: fine) {
   .full:hover .regionalBackground { visibility: visible; opacity: 0.15; }
-  .full:hover .geography { visibility: visible; opacity: 1; transform: translateY(-8px); }
+  .full:hover .geography { visibility: visible; opacity: 1; transform: translateY(-8px); pointer-events: auto; }
   .full:hover .favorite { opacity: 1; pointer-events: auto; }
   .full:hover .productImage { transform: scale(1.05); }
   .full:hover .cart:not(.cartAdded) { background: #2a403a; border-radius: 50%; }
@@ -256,7 +255,7 @@
   border-radius: 8px;
   background: rgb(0 0 0 / 70%);
   font-size: 16px;
-  line-height: 20px;
+  line-height: 130%;
   white-space: nowrap;
   visibility: hidden;
   pointer-events: none;

@@ -11,7 +11,11 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
   onSelect: (option: ProductCardConfiguration) => void;
 }>) {
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
+  const [activeId, setActiveId] = useState<string | undefined>(selected.id);
+  const activeOption = options.find(option => option.id === activeId)
+    ?? options.find(option => option.id === selected.id) ?? options[0];
+  const active = options.findIndex(option => option.id === activeOption?.id);
+  if (activeId !== activeOption?.id) setActiveId(activeOption?.id);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLUListElement>(null);
@@ -26,8 +30,8 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
     return () => document.removeEventListener('pointerdown', outside);
   }, [open]);
   const close = () => { setOpen(false); trigger.current?.focus(); };
-  const choose = (option: ProductCardConfiguration) => { onSelect(option); close(); };
-  const show = () => { setActive(options.findIndex(option => option.id === selected.id)); setOpen(true); };
+  const choose = (option: ProductCardConfiguration | undefined) => { if (!option) return; onSelect(option); close(); };
+  const show = () => { setActiveId(selected.id); setOpen(true); };
   return (
     <div className={styles.weightControl} ref={root} onBlur={(event) => {
       if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
@@ -43,21 +47,21 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
       </button>
       {open && (
         <ul className={styles.weightMenu} role="listbox" aria-label="Выберите вес"
-          id={id} ref={list} tabIndex={0} aria-activedescendant={`${id}-${active}`}
+          id={id} ref={list} tabIndex={0} aria-activedescendant={activeOption ? `${id}-${active}` : undefined}
           onKeyDown={(event) => {
             switch (event.key) {
               case 'Escape': event.preventDefault(); close(); break;
-              case 'ArrowDown': event.preventDefault(); setActive((active + 1) % options.length); break;
-              case 'ArrowUp': event.preventDefault(); setActive((active - 1 + options.length) % options.length); break;
-              case 'Home': event.preventDefault(); setActive(0); break;
-              case 'End': event.preventDefault(); setActive(options.length - 1); break;
-              case 'Enter': case ' ': event.preventDefault(); choose(options[active]); break;
+              case 'ArrowDown': event.preventDefault(); setActiveId(options[(active + 1) % options.length]?.id); break;
+              case 'ArrowUp': event.preventDefault(); setActiveId(options[(active - 1 + options.length) % options.length]?.id); break;
+              case 'Home': event.preventDefault(); setActiveId(options[0]?.id); break;
+              case 'End': event.preventDefault(); setActiveId(options[options.length - 1]?.id); break;
+              case 'Enter': case ' ': event.preventDefault(); choose(activeOption); break;
             }
           }}>
           {options.map((option, index) => (
             <li key={option.id} id={`${id}-${index}`} role="option"
               aria-selected={option.id === selected.id} data-active={index === active}
-              onPointerMove={() => setActive(index)} onClick={() => choose(option)}>{option.label}</li>
+              onPointerMove={() => setActiveId(option.id)} onClick={() => choose(option)}>{option.label}</li>
           ))}
         </ul>
       )}

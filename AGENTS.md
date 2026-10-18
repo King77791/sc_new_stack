@@ -1445,7 +1445,7 @@ DailyTop использует full на desktop и standard compact на tablet/
 ProductCard содержит независимые interactive/navigation zones:
 
 - свободная верхняя Product area / Product image и title → Product page;
-- Region/Origin control → Catalog с соответствующим Region filter;
+- Country control → Catalog с соответствующим Country filter;
 - Mood control → Catalog с соответствующим Mood filter;
 - Favorite и Cart → UI actions;
 - selectable Purchase Configuration / Weight в full presentation → UI state;
@@ -1455,13 +1455,13 @@ ProductCard содержит независимые interactive/navigation zones
 Вложенные `<a>` запрещены. Visual layering через position / absolute /
 z-index допустим при корректной DOM semantics.
 Утверждённый пример Mood navigation: `/catalog/mood/immunity`.
-Full geography и compact Country должны вести к Catalog filtering после
-утверждения маршрутов. Final geography route contract остаётся Open/Future
-до этапа Catalog: BLOCKED BY CATALOG ROUTING. До этого сохранять отдельные
-presentation labels без fake href; точные routes не придумывать.
-Конкретный mapping данных Country / Origin к UI зависит от Catalog/API
-architecture; различие сущностей и терминология из разделов 8.5–8.6
-сохраняются. Figma-подписи не определяют domain semantics.
+Country в full и compact — настоящий Catalog navigation link с единым
+route pattern `/catalog/region/<country-slug>`. Semantic slug хранится явно
+в Country presentation data, без runtime transliteration display name.
+`region` — routing namespace, а не переименование Country в Origin/Region.
+Country ≠ Origin; терминология из разделов 8.5–8.6 сохраняется.
+Catalog destination page реализуется отдельно. Figma-подписи не определяют
+domain semantics.
 
 ### УТВЕРЖДЕНО: presentation requirements
 
@@ -1472,12 +1472,13 @@ architecture; различие сущностей и терминология и
   с названием Mood; compact presentation скрывает Mood icons.
   Для Ceramics зарезервированная Mood area может оставаться свободной.
 - Full presentation имеет regional visual/background и interactive
-  Region/Origin entry point. Regional visual по умолчанию скрыт и появляется
+  Country entry point. Regional visual по умолчанию скрыт и появляется
   при hover карточки с opacity/transform animation. Compact presentation
   постоянно показывает только Country в компактном виде сверху.
-  Origin в compact ProductCard не отображается и не занимает отдельную
-  строку/место. Это presentation rule: Country ≠ Origin сохраняется,
-  Origin остаётся отдельным data/domain field для других contexts.
+  Full и compact показывают Country only. Origin не отображается и не
+  занимает отдельную строку/место. Это presentation rule: Country ≠ Origin
+  сохраняется; Origin остаётся отдельным data/domain field для Product Page,
+  Catalog filtering и detailed product information.
 - Compact presentation использует compact image geometry, постоянно
   доступный Favorite сверху, price перед title и широкую нижнюю Cart action
   bar. Title может переноситься согласно compact design. Hover-only desktop
@@ -1495,6 +1496,10 @@ architecture; различие сущностей и терминология и
   Purchase Configuration прямо в карточке, без перехода на Product Page.
   При выборе configuration немедленно меняются selected configuration
   и display price на готовое значение для неё.
+  Для текущей реализации и fixtures default Purchase Configuration = 50 г,
+  базовый порядок — 50 / 100 / 200 / 250 г; initial display price и discount
+  соответствуют 50 г. Будущий backend определяет фактически доступные
+  configurations и initial selection исходя из server authority.
   Dropdown открывается вверх без изменения размеров карточки; arrow
   отражает open/closed state с учётом prefers-reduced-motion.
 - В compact weight не является интерактивным control: например `50 г`
@@ -1931,6 +1936,20 @@ business/domain rules. После получения backend API отдельн�
 
 ## 21. Home PromoSection
 
+Статус: **PromoSection — READY / FROZEN 🔒**.
+
+Пройдены Implementation, Manual Review, Responsive Polishing, Final Visual
+Polishing, Incremental Code Review и Final Fix Gate. Единственный MEDIUM
+finding исправлен и прошёл targeted regression QA. Известных текущих
+blockers/findings нет.
+
+Стабильные компоненты в рамках feature:
+
+- PromoBanner — READY / FROZEN 🔒;
+- UpcomingEventPromo — READY / FROZEN 🔒;
+- DailyTop — READY / FROZEN 🔒;
+- ProductCard — READY / FROZEN 🔒.
+
 ### 21.1. УТВЕРЖДЕНО: состав и условный layout
 
 PromoSection — основной промо-блок Home Page. Он содержит обязательный
@@ -1957,8 +1976,8 @@ Sidebar существует при наличии UpcomingEventPromo (0..1) и�
   presentation из 21.4.
 - Только DailyTop: занимает всю доступную ширину под Banner.
 - Только Event: сохраняет нормальную presentation geometry; не растягивать
-  его ради отсутствующего DailyTop, если более конкретное responsive
-  решение не принято позже.
+  его на всю ширину ради отсутствующего DailyTop; сохранять ширину будущей
+  двухколоночной композиции. На mobile Event занимает доступную ширину.
 - Нет обоих: остаётся только Banner.
 
 Не воспроизводить устаревшую tablet Figma-композицию с вертикальным
@@ -1976,13 +1995,19 @@ Destination может вести на Product, Category, Event, другую в
 Весь PromoBanner — одна кликабельная ссылка. CTA внутри banner artwork
 не создаёт отдельную вложенную DOM-ссылку или button.
 
-Утверждённый presentation pattern: отдельный scalable/croppable
-background, gradient/darkening presentation и отдельный critical-content
-image. Последний содержит критически важный визуальный/текстовый контент
-и не должен нежелательно crop-иться при изменении размеров Banner.
-Разделение слоёв — сознательное UI/design решение; не объединять их
-автоматически в одну картинку. Ориентировочный размер текущего исходного
-critical-content asset — 760×760 px, не обязательный размер компонента.
+Утверждённый slide состоит из отдельного background asset, общего
+frontend gradient, одного неделимого critical artwork asset и
+destination/accessibility metadata. Background может responsive crop-иться;
+gradient остаётся программным presentation layer и не входит в editor content.
+Не объединять background и critical artwork в одну картинку.
+
+Critical artwork около 760×760 px — единый editor/content asset, а не
+обязательный размер компонента. Typography, product image, visual CTA,
+labels и decorations принадлежат этому цельному изображению. Frontend
+не разбивает artwork на child layers и не воспроизводит его внутреннюю
+композицию. Artwork масштабируется как единое целое с сохранением
+прозрачности; critical information не должна crop-иться. Реализация
+Editor/CMS/API остаётся Future.
 
 При одном Banner slider controls скрыты; при нескольких показываются
 pagination dots и previous/next controls. Используется autoplay с
@@ -1992,6 +2017,21 @@ pagination dots и previous/next controls. Используется autoplay с
 изменяемой implementation constant/configuration без разбросанных magic
 numbers. Это не вводит admin setting или API field.
 
+Видимая Pause/Resume control не используется; скрытый focusable аналог
+не добавляется. Mobile/touch поддерживает horizontal swipe через ту же
+manual navigation: swipe сбрасывает autoplay interval. Вертикальный scroll
+страницы поверх Banner сохраняется; tap открывает destination, swipe — нет.
+
+Видимость Banner в viewport сама по себе не приостанавливает autoplay.
+Hover pause относится ко всей visual/navigation surface только при
+реальном наведении hover-capable pointer; touch tap/swipe не оставляют
+hover pause. После pointer leave начинается новый полный 5-second interval.
+Keyboard focus внутри Banner приостанавливает autoplay; после его ухода
+или перехода к pointer interaction countdown возобновляется заново.
+Hidden browser tab отдельно приостанавливает autoplay; после возвращения
+начинается новый interval без догоняющих переключений. Reduced motion
+отключает autoplay и dissolve, сохраняя manual navigation.
+
 Advertisement badge из Figma не входит в текущую реализацию PromoBanner:
 не реализовывать `Реклама`, info interaction, ERID UI, advertising metadata,
 advertising API/schema или специальную механику внешней рекламы.
@@ -2000,23 +2040,40 @@ advertising API/schema или специальную механику внешн
 Сторонняя реклама и соответствующие legal/ERID requirements — отдельная
 Future business/legal feature с собственными требованиями.
 
-Точная accessibility/motion implementation (prefers-reduced-motion,
-pause/focus behavior) определяется при technical implementation с учётом
-раздела 13, не выдумывается сейчас как business rule.
+Остальные accessibility implementation details учитывают раздел 13.
 
 ### 21.3. УТВЕРЖДЕНО: UpcomingEventPromo
 
 Отображается 0..1 продвигаемое событие; presentation содержит минимум
-image, title, address и destination на Event page.
+image, title, address и destination отдельной публикации.
 UpcomingEventPromo содержит независимые navigation zones:
 
-- Event image → Event article/page;
+- Event image → `/article/{article_id}`;
 - type label (`Мероприятие` / `Новость`) → соответствующая category статей;
-- Event title → Event article/page;
-- chevron → Event article/page.
+- Event title → `/article/{article_id}`;
+- chevron → `/article/{article_id}`.
 
 Не оборачивать весь UpcomingEventPromo в один `<a>` и не создавать nested
 anchors. Address — presentation content, если отдельно не определено иное.
+
+UpcomingEventPromo server-renderable и не требует собственного client state.
+Tablet использует собственную внутреннюю responsive composition по Figma:
+image, content и нижняя navigation zone расположены вертикально; это не
+просто уменьшенный desktop Event. Event и DailyTop остаются соседними
+tablet blocks без принудительного выравнивания intrinsic content height.
+Утверждённый routing contract: `/events/` — общий каталог статей и событий;
+`/events/{category-id}` — каталог публикаций категории;
+`/article/{article_id}` — отдельная публикация, в том числе Event
+(например `/article/31`); сохраняется текущий production routing.
+Type/category navigation surface ведёт на `/events/{category-id}`.
+Числовой articleId и category id/slug хранятся явно в presentation data,
+без runtime transliteration. Отсутствующее событие не создаёт sidebar или placeholder.
+
+OPEN DOMAIN QUESTION: Content Type (`article` / `event`) и Content
+Category/Topic — концептуально разные dimensions. UI type label не
+определяет category identity. Финальная taxonomy/CMS/backend model будет
+определена при реализации Events/Articles; обязательная many-to-many
+структура сейчас не утверждается.
 
 Scheduled publication, publication lifecycle, период отображения до/после
 события и manual hide управляются backend/admin.
@@ -2043,17 +2100,21 @@ Frontend safety limit — максимум 7 Product: при большем payl
 integration также учитывает invariant и не считает Preorder нормальным
 DailyTop case. Общий ProductCard при этом поддерживает Preorder (8.36).
 
+При undefined/null/empty списке DailyTop отсутствует без placeholder.
+Общий ProductCard используется без изменений: full на desktop и compact
+на tablet/mobile. Отсутствующий responsive presentation не должен оставлять
+дублирующиеся interactive controls доступными keyboard/screen reader.
+
 #### Desktop
 
 Одна full/desktop ProductCard за раз, user-driven slider/carousel.
-При нескольких Product показывается pagination; при одном отображается
+При нескольких Product показываются Previous/Next и pagination; при одном отображается
 одна full карточка без pagination и лишних controls.
 Autoplay, таймер и автоматическая смена/ротация Product запрещены:
 пользователь взаимодействует с Purchase Configuration, Favorite и Cart,
 и автоматическая смена может прервать это взаимодействие.
-Стрелки не требуются без отдельного будущего решения; loop не является
-необходимым business requirement. Не переносить PromoBanner autoplay
-на DailyTop.
+Навигация циклическая, без cloned slides. Не переносить PromoBanner autoplay
+на DailyTop. Состояние DailyTop navigation не меняет состояния соседних промо.
 
 #### Tablet / Mobile
 
@@ -2061,6 +2122,8 @@ Autoplay, таймер и автоматическая смена/ротация
 standard compact/mobile ProductCard: horizontal CSS scroll и native touch
 scrolling, с несколькими карточками, расположенными горизонтально.
 Desktop slider presentation, pagination dots и autoplay не используются.
+Heading на tablet/mobile имеет собственный horizontal content inset,
+не меняющий геометрию horizontal scrolling track.
 Не создавать DailyTopProductCard и не уменьшать full карточку вместо
 standard compact presentation. CSS scroll-snap — implementation option,
 не утверждённый business requirement.

@@ -1,0 +1,53 @@
+.banner {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  height: 760px;
+  overflow: hidden;
+  background: #001518;
+  color: #fff;
+  touch-action: pan-y pinch-zoom;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 300ms ease, visibility 0s 300ms;
+}
+.slide[data-active='true'] { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
+.link { position: absolute; inset: 0; display: block; color: inherit; }
+.background { object-fit: cover; object-position: center; }
+.darken {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 11.842%, rgb(0 0 0 / 19%) 30.281%, rgb(0 0 0 / 70%) 68.492%, #000 100%);
+}
+.canvas { position: absolute; top: 0; left: 50%; width: min(100%, 760px); height: 100%; transform: translateX(-50%); pointer-events: none; }
+.content { display: block; width: 100%; height: 100%; object-fit: contain; }
+.banner button { border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; background: transparent; }
+.banner button:focus-visible { outline: 2px solid var(--color-cream-gold); outline-offset: 2px; border-radius: 4px; }
+.link:focus-visible { outline: 3px solid var(--color-cream-gold); outline-offset: -4px; }
+.arrow { position: absolute; z-index: 1; top: 50%; display: grid; place-items: center; width: 64px; height: 64px; transform: translateY(-50%); opacity: 0.3; }
+.arrow:hover, .arrow:focus-visible { opacity: 1; }
+.previous { left: 48px; }
+.previous img { transform: rotate(180deg); }
+.next { right: 32px; }
+.pagination { position: absolute; z-index: 1; right: 11px; bottom: 10px; display: flex; }
+.dot { display: grid; place-items: center; width: 20px; height: 24px; }
+.dot::before { content: ''; display: block; width: 11.38px; height: 11.38px; border-radius: 50%; background: rgb(255 255 255 / 20%); }
+.dot[aria-current='true']::before, .dot:hover::before { background: rgb(255 255 255 / 80%); }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@container promo-section (max-width: 759px) {
+  .banner { height: auto; aspect-ratio: 1; }
+  .arrow { width: 44px; height: 44px; }
+  .arrow img { scale: 0.5; }
+  .previous { left: 24px; }
+  .next { right: 8px; }
+  .pagination { right: 4px; bottom: 0; }
+  .dot { width: 10px; }
+  .dot::before { width: 5.62px; height: 5.62px; }
+}
+@media (prefers-reduced-motion: reduce) { .slide { transition: none; } }

@@ -14,6 +14,7 @@ type TeaMoods = readonly [ProductCardMood]
   | readonly [ProductCardMood, ProductCardMood, ProductCardMood];
 
 export type ProductCardCountry = Readonly<{
+  slug: string;
   label: string;
   illustration?: string;
   background?: string;

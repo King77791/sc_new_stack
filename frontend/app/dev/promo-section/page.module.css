@@ -1,0 +1,4 @@
+.demo { background: var(--color-header-green); color: #fff; }
+.demo > h1 { padding: 24px 16px 0; font-size: 28px; letter-spacing: normal; font-weight: 500; }
+.demo > h2 { padding: 16px; margin: 0; font-size: 22px; font-weight: 500; }
+.demo > p { max-width: 760px; padding: 0 16px; font-size: 16px; line-height: 1.5; }

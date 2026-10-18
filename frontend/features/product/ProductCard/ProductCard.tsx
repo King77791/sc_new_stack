@@ -55,9 +55,8 @@ export function ProductCard({ data, presentation, favorite = false }: ProductCar
             ))}
           </ul>
         )}
-        {(data.country || (!compact && data.origin)) && (
-          // BLOCKED BY CATALOG ROUTING: independent labels below are future navigation boundaries; no speculative href.
-          <div className={styles.geography}>
+        {data.country && (
+          <Link href={`/catalog/region/${encodeURIComponent(data.country.slug)}`} className={styles.geography}>
             {compact ? (
               <Image src="/icons/regions/marker.svg" alt="" width={7} height={10} />
             ) : data.country?.illustration ? (
@@ -67,9 +66,8 @@ export function ProductCard({ data, presentation, favorite = false }: ProductCar
             ) : null}
             <div className={styles.geographyLabels}>
               {data.country && <span><span className={styles.srOnly}>Страна: </span>{data.country.label}</span>}
-              {!compact && data.origin && <span className={styles.origin}><span className={styles.srOnly}>Регион: </span>{data.origin.label}</span>}
             </div>
-          </div>
+          </Link>
         )}
         {compact && discount && <span className={styles.discountBadge}>{discount.label}</span>}
       </div>
