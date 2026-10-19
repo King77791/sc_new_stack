@@ -1,0 +1,4 @@
+.controls { padding: 24px; }
+.controls h1 { font-size: 24px; letter-spacing: 0; }
+.controls label { display: inline-flex; gap: 8px; margin: 8px 16px 8px 0; }
+.controls input[type='number'] { width: 60px; }

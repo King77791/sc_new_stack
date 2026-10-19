@@ -2189,3 +2189,96 @@ Full title marquee запускается только при hover непоср
 если AGENTS.md не содержит более конкретного утверждённого правила.
 Presentation rules не являются API schema и не создают параллельную
 Product domain model.
+
+---
+
+## 22. Home CategoriesSection
+
+CategoriesSection — текущая Home feature после PromoSection. ProductCard,
+PromoSection, PromoBanner, UpcomingEventPromo и DailyTop остаются READY / FROZEN;
+подключение CategoriesSection не разрешает их изменение или повторный review.
+
+### 22.1. Данные и навигация
+
+Category Card целиком является одной ссылкой `/category/{slug}`: title,
+count и decorative image находятся внутри неё, без nested/overlay anchors
+и дополнительных interactive zones. Header/Footer routing этой feature не меняется.
+Category identity берётся из общего источника категорий; не создавать второй
+независимый список. Header-specific presentation не является Home backend model.
+
+`productCount` — обязательные server-authoritative данные. До API допустимы
+явно обозначенные typed fixtures, но не расчёт count из Header items, локальных
+Product или ProductCard fixtures. Presentation model не является backend DTO.
+Категории с `productCount === 0` скрываются ДО определения visible N/layout.
+Не приравнивать отсутствующий count к нулю; будущий API adapter отвечает за
+неполные/невалидные данные согласно отдельному backend contract.
+При пустом visible списке секция полностью отсутствует без placeholder/message.
+Входной порядок сохраняется в DOM: слева направо, затем сверху вниз.
+Sorting, CSS order, dense-перестановки и silent `slice(0, 8)` запрещены.
+
+### 22.2. Responsive composition
+
+Desktop control 1920: content width 1840, horizontal gutters 40, card height 180.
+Recipes N=4..8: `4`, `3/2`, `4/2`, `4/3`, `4/4` соответственно.
+В рядах из четырёх карточек gap 20; в рядах из двух/трёх — 16; row gap 13.
+Desktop radius 4, emerald base/black gradient, без legacy shadow/stroke.
+Promo → Categories gap 10; spacing после Categories — 40.
+
+Tablet control 1024: full width без horizontal gutters, height 120, gaps 4,
+radius 0. Recipes N=4..8: `2/2`, `3/2`, `2/2/2`, `2/2/3`, `2/3/3`.
+Image frame 220×220 справа; desktop centered-wide geometry не переносится.
+Секция непосредственно примыкает к Promo, spacing после неё — 24.
+
+Mobile control 375: full width, height 100, gaps 2, radius 0, image frame 150×150.
+Для N=4..8 — последовательные пары; при нечётном N последняя карточка занимает
+полную строку. Внешние vertical spacings — 24. Title/count расположены вертикально
+с читаемым отступом: ошибочное mobile Figma-пересечение не воспроизводится.
+Используются существующие Cera Pro weights без новых font files.
+
+Fallback visible N=1..3: один ряд, элементы равномерно делят всю ширину.
+Fallback N>8: последовательные полные группы по четыре, остаток равномерно
+заполняет последнюю строку без пустых slots и frontend upper limit.
+На tablet полная группа из четырёх занимает два ряда по две; на mobile
+используются последовательные пары и полноширинный последний нечётный элемент.
+Это fallback, а не разрешение изменять recipes N=4..8.
+Breakpoints определяются поведением layout; контрольные размеры не являются
+единственными поддерживаемыми viewport.
+
+### 22.3. Images, motion и accessibility
+
+Home использует полные category images из Figma, не Header half-image graphics.
+Отсутствующий asset обозначается явно: title/count/background сохраняются,
+но fake graphic, Header fallback и broken image не рендерятся. Добавление
+доступного asset должно требовать изменения data mapping, а не архитектуры.
+Изображения декоративные (`alt=""`), используются через next/image с responsive
+sizes и lazy loading по умолчанию; временные Figma URLs не используются в runtime.
+
+Presentation определяется количеством/позицией, не slug: normal/medium используют
+image frame 300×300; wide и enlarged нижнего ряда N=7 — 480×480.
+Все image movement transitions: `transform .5s ease-in-out`; это утверждённое
+решение имеет приоритет над Figma prototype 300ms ease-out.
+N=7 enlarged и N=8 standard: translate3d(40%,0,0) → translate3d(15%,0,0).
+N=6 wide: translate3d(-50%,0,0) → translate3d(15%,0,0).
+Для остальных states используется ближайший утверждённый presentation rule
+с явным описанием принятого соответствия при реализации.
+
+Hover всей карточки управляет image, gradient и underline; не требовать hover title.
+Underline точно повторяет MainNavigation Header: ::after, scaleX(0→1), origin right,
+1px, cream-gold, существующий motion-duration/ease. Header при этом не меняется.
+Keyboard :focus-visible включает эквивалентный presentation и видимый indicator.
+Touch сразу выполняет navigation, не требует hover/double tap/gesture handling.
+Reduced motion отключает плавное движение image и underline; focus остаётся видимым.
+
+### 22.4. Server boundary и loading
+
+CategoriesSection — Server Component: markup/data на сервере; layout, responsive,
+hover/focus/motion — CSS. Не добавлять client boundary, viewport JS, measurement,
+observers, listeners, timers или dependencies ради этой секции.
+Один renderer обслуживает recipes; отдельные Categories4/5/6/7/8 не создаются.
+
+CategoriesSectionSkeleton существует как будущий server-loading/Suspense fallback.
+До ответа API visible N неизвестен: skeleton использует нейтральные четыре
+placeholder — desktop один ряд, tablet/mobile 2×2, с соответствующей высотой cards.
+Нет fake title/count, interactive links, клиентского loading state или API delay.
+При static fixtures не подключать искусственный Suspense/loading. Optional shimmer
+допустим только через CSS с отключением при reduced motion.
