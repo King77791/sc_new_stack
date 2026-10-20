@@ -320,3 +320,247 @@
 @media (prefers-reduced-motion: reduce) {
   .weight > img, .full .productImage, .full .regionalBackground, .full .geography, .full .favorite { transition: none; }
 }
+
+
+/* Single DOM tree: only the applicable controls are interactive. */
+.full .compactOnly, .full .countryMarker, .full .discountBadge,
+.compact .fullOnly, .compact .moods, .compact .countryIllustration { display: none !important; }
+.compact .title a, .compact .marquee > span { white-space: normal; }
+.compact .marquee > span { display: inline; }
+.compact .discountBadge { top: 134px; bottom: auto; left: 13px; }
+.quantityBar .editQuantity { flex: 1; border-radius: 0; background: transparent; font-size: 20px; }
+.fullOnly, .compactOnly { /* Classes also identify focus restoration targets. */ }
+
+@media (min-width: 1280px) {
+
+
+.responsive {
+  container-type: inline-size;
+  container-name: product-card;
+  width: 100%;
+  min-width: 320px;
+  max-width: 360px;
+  height: 425px;
+  border-radius: 14px;
+  background: #182e28;
+}
+
+.responsive .visual { height: 315px; }
+
+.responsive .artwork { border-radius: 14px 14px 200px 200px; }
+
+.responsive .regionalBackground { visibility: hidden; opacity: 0; transition: opacity 0.3s ease-in-out, visibility 0.3s; }
+
+.responsive .imageClip { border-radius: 14px 14px 200px 200px; }
+
+.responsive .productImage { width: 245px; height: 245px; }
+
+.responsive .geography { top: 24px; right: 8px; width: 100px; visibility: hidden; opacity: 0; text-align: center; transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0.3s; pointer-events: none; }
+
+.responsive .content {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-rows: 30px 40px;
+  column-gap: 16px;
+  row-gap: 6px;
+  margin: 10px 24px 0;
+  padding-right: 72px;
+}
+
+.responsive .title { grid-column: 1 / -1; font-size: 20px; line-height: 25px; }
+
+.responsive .title a { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.responsive .price { align-self: center; font-size: 24px; line-height: 30px; opacity: 0.8; }
+
+.responsive .weight, .responsive .preorderLabel {
+  align-self: center;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 30px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: #2a403a;
+  font-size: 20px;
+  line-height: 20px;
+}
+
+.responsive button.weight { width: 80px; }
+
+.responsive .originalPrice {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 18px;
+  line-height: 22px;
+}
+
+.responsive.discount .content { grid-template-rows: 25px 18px 30px; row-gap: 3px; }
+
+.responsive.discount .price { grid-row: 3; }
+
+.responsive.discount .weight, .responsive.discount .weightControl { grid-row: 3; }
+
+.responsive .preorderLabel { font-weight: 400; font-size: 20px; color: rgb(255 255 255 / 60%); }
+
+.responsive.preorder .content { padding-right: 64px; column-gap: 12px; }
+
+.responsive.preorder .price { font-size: 24px; }
+
+
+/* Adapt the lower content to the annotated 320–360px card range, not site breakpoints. */
+@container product-card (max-width: 340px) {
+  .responsive .content, .responsive.preorder .content { column-gap: 8px; }
+
+  .responsive .price, .responsive.preorder .price { font-size: 22px; }
+
+  .responsive .preorderLabel { font-size: 18px; }
+}
+
+.responsive .favorite { right: 24px; top: 261px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-out; }
+
+.responsive.preorder .favorite { top: 333px; }
+
+.responsive .cart { position: absolute; right: 24px; bottom: 20px; width: 64px; height: 64px; background: transparent; opacity: 0.8; }
+
+
+/* Interaction layers extend the accepted geometry; artwork alone stays clipped. */
+.responsive .productImage { transform-origin: center; transition: transform 0.3s ease-in-out; }
+
+.responsive:focus-within .regionalBackground { visibility: visible; opacity: 0.15; }
+
+.responsive:focus-within .geography { visibility: visible; opacity: 1; transform: translateY(-8px); pointer-events: auto; }
+
+.responsive:focus-within .favorite { opacity: 1; pointer-events: auto; }
+
+.responsive:focus-within .productImage { transform: scale(1.05); }
+
+.responsive:focus-within .cart:not(.cartAdded) { background: #2a403a; border-radius: 50%; }
+
+@media (hover: hover) and (pointer: fine) {
+  .responsive:hover .regionalBackground { visibility: visible; opacity: 0.15; }
+
+  .responsive:hover .geography { visibility: visible; opacity: 1; transform: translateY(-8px); pointer-events: auto; }
+
+  .responsive:hover .favorite { opacity: 1; pointer-events: auto; }
+
+  .responsive:hover .productImage { transform: scale(1.05); }
+
+  .responsive:hover .cart:not(.cartAdded) { background: #2a403a; border-radius: 50%; }
+}
+
+.responsive .marquee > span { display: block; overflow: hidden; text-overflow: ellipsis; }
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .responsive .marquee[data-overflow='true']:hover { text-overflow: clip; }
+
+  .responsive .marquee[data-overflow='true']:hover > span {
+    width: max-content;
+    overflow: visible;
+    animation: titleTravel var(--title-duration) linear 0.5s infinite alternate;
+  }
+}
+
+.responsive .cartAdded { border-radius: 50%; background: #ccc; opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .weight > img, .responsive .productImage, .responsive .regionalBackground, .responsive .geography, .responsive .favorite { transition: none; }
+}
+
+.responsive .compactOnly, .responsive .countryMarker, .responsive .discountBadge { display: none !important; }
+}
+@media (max-width: 1279px) {
+
+.responsive .imageClip { border-radius: 14px; }
+
+
+.responsive { display: flex; flex-direction: column; align-items: center; width: 170px; height: 272px; }
+
+.responsive .visual { width: 160px; height: 160px; flex: 0 0 160px; }
+
+.responsive .artwork { border-radius: 14px; }
+
+.responsive .regionalBackground { width: 210px; height: 184px; inset: auto; top: 0; left: -25px; }
+
+.responsive .productImage { width: 140px; height: 140px; }
+
+.responsive .geography { top: 8px; left: 8px; display: flex; align-items: flex-start; gap: 2px; max-width: 95px; }
+
+.responsive .geography > img { flex: 0 0 auto; }
+
+.responsive .geographyLabels { min-width: 0; font-size: 10px; line-height: 12px; opacity: 0.8; }
+
+.responsive .geographyLabels > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.responsive .content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 80px;
+  padding: 4px 8px;
+}
+
+.responsive .price { order: 0; font-size: 18px; font-weight: 500; line-height: 23px; }
+
+.responsive .title {
+  order: 2;
+  font-size: 14px;
+  line-height: 15px;
+  opacity: 0.8;
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.responsive .weight { margin-top: auto; order: 3; font-size: 12px; line-height: 15px; opacity: 0.6; }
+
+.responsive .title:focus-within {
+  outline: 2px solid var(--color-cream-gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.responsive .title a:focus-visible { outline: none; }
+
+.responsive .originalPrice { position: absolute; top: 8px; left: 86px; font-size: 14px; line-height: 18px; }
+
+.responsive .discountBadge { position: absolute; z-index: 2; bottom: 8px; left: 8px; color: var(--color-cream-gold); font-size: 14px; }
+
+.responsive .favorite { top: 6px; right: 11px; width: 40px; height: 40px; }
+
+.responsive .favoriteOutline { transform: scale(0.7292); opacity: 1; }
+
+.responsive .favoriteFilled { transform: scale(0.625); }
+
+.responsive .cart, .preorderBar {
+  flex: 0 0 32px;
+  width: 160px;
+  height: 32px;
+  gap: 8px;
+  border-radius: 7px;
+  background: rgb(255 255 255 / 15%);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.responsive .cart { font-weight: 500; }
+
+.responsive .cart > span { opacity: 0.8; }
+
+.responsive .cartIcon { width: 16px; height: 16px; }
+
+.responsive .cartIcon img { width: auto; height: 16px; }
+
+.responsive.preorder .price { opacity: 0.5; }
+
+.responsive .fullOnly, .responsive .moods, .responsive .countryIllustration { display: none !important; }
+.responsive .title a, .responsive .marquee > span { white-space: normal; }
+.responsive .marquee > span { display: inline; }
+.responsive .discountBadge { top: 134px; bottom: auto; left: 13px; }
+}

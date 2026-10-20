@@ -1504,8 +1504,8 @@ domain semantics.
   отражает open/closed state с учётом prefers-reduced-motion.
 - В compact weight не является интерактивным control: например `50 г`
   представляет текущий/представляемый вес. Пользователь не меняет Purchase
-  Configuration внутри compact ProductCard. На mobile её изменение
-  выполняется на Product Page либо через отдельную Future mobile panel.
+  Configuration непосредственно в compact ProductCard: selectable purchase flow
+  открывается через CTA в Bottom Sheet по утверждённому уточнению ниже.
 - Fixed-weight / Pressed Tea в full использует visual area/style обычного
   Weight control, но с фиксированным значением (например `250 г`), readonly,
   без dropdown arrow и interaction. В compact это informational weight text
@@ -1543,6 +1543,75 @@ Preorder presentation использует существующий Cera Pro Reg
 presentation значением. Ограничение DailyTop описано в 21.4 и не отменяет
 поддержку Preorder общим ProductCard.
 
+### УТВЕРЖДЕНО: compact Bottom Sheet / responsive purchase contract
+
+Это уточнение заменяет прежнее Future-only описание mobile purchase panel и
+прямое добавление configurable товара compact CTA. Обновляется contract;
+Для Unified Responsive Architecture + Compact Purchase Bottom Sheet freeze узко
+снят отдельным implementation scope; остальные feature freeze сохраняются.
+
+Full сохраняет inline configuration selector, готовую цену выбранной configuration
+и Cart interaction в карточке. Compact CTA «Добавить в корзину» для selectable
+товара открывает Bottom Sheet, не добавляя товар напрямую. В панели пользователь
+идентифицирует товар, видит актуальную готовую цену, выбирает доступную configuration,
+меняет quantity и подтверждает добавление. Закрытая compact card сохраняет
+информационное представление веса без desktop selector. Этот вес не обязательно
+равен окончательной configuration, выбранной для Cart.
+
+Full inline selector и Bottom Sheet работают с одним domain concept Purchase
+Configuration (8.15), без DesktopWeightOption/MobileWeightOption. Доступные options
+задаются данными товара/backend, не глобальным UI hardcode. Fixed-weight Tea,
+Ceramics и другие non-configurable товары показывают только релевантные controls,
+без фиктивного weight selector. Preorder не открывает обычный Cart flow и не может
+быть добавлен в Cart через панель.
+
+Разделять presentation карточки, purchase configuration, transient Bottom Sheet
+state и confirmed Cart state. Draft quantity/selection до подтверждения не меняют
+Cart; подтверждение передаёт выбранную configuration + quantity. Не создавать два
+независимых confirmed Cart states для full/compact. Серверная ответственность и
+ограничения UI-only testing до API сохраняются (8.21, 8.27–8.32).
+
+Утверждённое направление — одна responsive ProductCard, одна product identity,
+один Favorite state, CSS-owned full/compact layout; без responsive duplication и
+matchMedia для выбора всей карточки. Resize сам по себе не является Cart action и
+не должен молча терять выбранную configuration. Full selection может стать initial
+selection панели; пользователь всё равно выбирает/подтверждает weight и quantity.
+Неподтверждённая selection панели остаётся transient; её безопасное сохранение как
+current configuration допустимо, но не означает добавления в Cart.
+
+Bottom Sheet — interactive Client Component: open/close, draft configuration и
+quantity, confirmation и modal lifecycle. Требуются dialog semantics/name, focus
+transfer, keyboard navigation, Escape, возврат focus к доступному trigger, отсутствие
+focus вне открытого modal, корректные overlay и scroll behavior. При переходе к full
+открытая панель закрывается с cleanup overlay/focus trap/body scroll lock; скрытого
+открытого dialog state оставаться не должно. Узкая media-aware lifecycle logic в
+purchase island допустима для этого cleanup, а не для выбора layout всей карточки.
+
+Точный визуальный источник:
+[Figma Bottom Sheet, 145:46501](https://www.figma.com/design/VZ3bfelRsFChkn6WVuy2yg/?node-id=145-46501).
+Это Component Set «Добавить в корзину»: «Шторка выбора» и «Кнопка», со связанными
+weight/quantity states. Figma определяет визуальную геометрию; modal semantics,
+подтверждение Cart и разделение state определяются этим product contract.
+Реализовано: `presentation="full" | "compact" | "responsive"`; первые два режима
+fixed, responsive переключается только CSS на 1280 px (ниже — compact). Одна
+server-first ProductCard содержит по одному title/image/Country/Mood subtree,
+Favorite island и ProductCardPurchase owner. Последний хранит current configuration
+и confirmed local quantity; новый mount ProductPurchaseSheet создаёт отдельный draft
+из current configuration и confirmed quantity > 0 ? quantity : 1. Confirm commit,
+Escape и переход responsive → full отменяют draft. Реальная inline смена
+configuration сбрасывает quantity. Fixed-weight Tea/Ceramics сохраняют прямой
+compact action без Sheet и фиктивного selector; preorder исключён из Cart flow.
+
+Sheet использует native modal dialog с transparent backdrop, без click-dismiss,
+drag и close icon. Scroll lock действует только при открытии; matchMedia listener
+существует только у открытой responsive Sheet для cleanup на full. Focus возвращается
+на видимый compact trigger, при его скрытии — на full Cart action этой карточки.
+Готовые prices/options берутся из данных; reference label — label configuration,
+без price calculation и выдуманного stock/max quantity. Backend Cart отсутствует.
+
+Статус: **PRODUCTCARD RESPONSIVE REFACTOR READY FOR MANUAL REVIEW**.
+Это не повторный freeze и не разрешение продолжать ProductGrid/ProductShelf/Home.
+
 ### Implementation details / Open / Future
 
 Desktop/tablet/mobile могут перестраивать расположение элементов,
@@ -1556,10 +1625,9 @@ Favorite и Cart mock interactions ограничены разделами 8.23 
 Notification system и отдельный desktop/tablet Cart Widget — будущие
 задачи вне текущего ProductCard implementation scope.
 Compact/mobile Cart допускает только минимальное локальное testing
-согласно 8.27. Mobile Cart panel и purchase configuration mobile panel —
-отдельная Future feature: не исследовать и не реализовывать их в текущем
-ProductCard/Home scope. Их architecture не утверждена; не имитировать
-backend synchronization.
+согласно 8.27. Compact purchase Bottom Sheet имеет утверждённый UX contract выше;
+его реализация описана выше и ожидает отдельного Manual Review. Это не
+разрешает реализацию отдельного Cart Widget или имитацию backend synchronization.
 ProductCard API DTO, реальные Cart/Favorite endpoints и окончательные
 backend validation/error contracts не утверждены.
 
@@ -2293,3 +2361,136 @@ placeholder — desktop один ряд, tablet/mobile 2×2, с соответс
 Нет fake title/count, interactive links, клиентского loading state или API delay.
 При static fixtures не подключать искусственный Suspense/loading. Optional shimmer
 допустим только через CSS с отключением при reduced motion.
+
+---
+
+## 23. Product Collection / Home ProductShelf — утверждённый contract
+
+Home CatalogSection Discovery и Product Collection Pattern Discovery завершены;
+результат: `SHARED PRODUCT GRID IS SUPPORTED WITH LIMITED VARIANTS`.
+Catalog, Category и Favorites используют одинаковую collection geometry на основных
+desktop/tablet/mobile adaptations. Следующие продуктовые решения имеют приоритет
+над исходной Home slider-композицией Figma. Это contract перед Implementation,
+а не статус готовности реализации.
+
+### 23.1. УТВЕРЖДЕНО: ProductGrid и границы ответственности
+
+Переиспользуемый presentation primitive — `ProductGrid`, размещающий существующие
+`ProductCard[]`; не создавать вместо него CatalogComponent или shared slider.
+ProductCard остаётся READY / FROZEN (8.36, 21): переиспользовать `full`/`compact`
+без изменения API, внутренней реализации, альтернативной карточки или локальной копии.
+
+ProductGrid получает ordered collection, сохраняет входной порядок, рендерит
+ProductCard и управляет утверждённым responsive layout, wrapping, gaps и неполными
+рядами. Он не выполняет fetching/API integration, selection, ranking/score,
+business sorting, выбор победителя категории или исключение preorder. Filters,
+pagination/load-more lifecycle, infinite loading, virtualization, Favorites domain
+и семантика подборки также находятся вне ProductGrid.
+
+Conceptual composition:
+
+- Home ProductShelf: SectionTitle + ProductGrid + optional section CTA;
+- CatalogPage: page controls/filters/sorting + ProductGrid + results continuation;
+- CategoryPage: category UI, filters/sorting where applicable + ProductGrid + continuation;
+- FavoritesPage: user-specific page UI + ProductGrid + empty/results controls.
+
+Catalog/Category владеют result count, filters, sorting, continuation и no-results;
+Favorites — пользовательской коллекцией, removal, sorting и empty state.
+Повторное использование grid не переносит lifecycle этих страниц внутрь него.
+
+### 23.2. УТВЕРЖДЕНО: общая геометрия ProductGrid
+
+Неполный последний ряд во всех контекстах (Home/Catalog/Category/Favorites)
+заполняется слева направо, aligned to start. Не центрировать остаток, не распределять
+его через SPACE_BETWEEN и не растягивать карточки ради заполнения строки.
+
+Общий desktop gap X/Y — **30 px**, включая Home. Отдельный Home gap 20 px из
+исходной slider-композиции отклонён; Home-specific gap variant для него не нужен.
+
+Контрольная Figma listing geometry:
+
+| Viewport | Collection width | Presentation | Card size | Columns | Gap X | Gap Y |
+| --- | --- | --- | --- | --- | --- | --- |
+| Desktop 1920 | 1530 px | full | 360×425 px | 4 | 30 px | 30 px |
+| Tablet 1024 | 944 px | compact | 170×272 px | 5 | ≈23.5 px, design gap 24 px | 24 px |
+| Mobile 375 | 343 px | compact | 170×272 px | 2 | 3 px | 24 px |
+
+Layout зависит от доступной ширины: desktop family использует full, tablet/mobile
+family — compact. Compact фиксирован 170×272; full использует существующий
+утверждённый диапазон ProductCard 320–360 px при высоте 425 px. ProductCard ради
+grid не изменяется. Промежуточные Figma states — reference; точный универсальный
+responsive algorithm необходимо реализовать и проверить в Implementation.
+
+### 23.3. УТВЕРЖДЕНО: SectionTitle
+
+SectionTitle — отдельный reusable pattern, не часть ProductGrid. Cera Pro Regular
+400, белый текст: desktop 40 px, centered, gold lines с двух сторон; tablet 32 px,
+left aligned, линия справа; mobile 24 px, left aligned, линия справа.
+Decorative lines: 2 px, #EABC6F, opacity 20%.
+
+Минимальный conceptual contract: content/children, optional href, id и placement
+class только при реальной необходимости вызывающего layout. Navigation поддерживается
+по Figma intent; на Home semantic heading — h2. Не создавать заранее большой
+polymorphic API или alignment variants без consumer; slider controls внутрь
+SectionTitle не помещать и с ProductGrid его не связывать.
+
+### 23.4. УТВЕРЖДЕНО: Home ProductShelf «Каталог»
+
+ProductShelf — ограниченная merchandising/discovery подборка, не мини-версия всего
+каталога. Первая Home shelf: title «Каталог», title destination `/catalog`.
+Hard product limit этой selection — **8 products**, независимо от размера каталога.
+Будущий backend/CMS отдаёт уже выбранную ordered collection максимум из 8 товаров;
+получение всего каталога с frontend `slice(0, 8)` не является production strategy.
+
+Нормальное целевое состояние — до одного eligible showcase-product от каждой
+верхнеуровневой категории общего источника catalogCategories: Черный, Зеленый,
+Улун, Пуэр, Красный, Белый, Подарки, Аксессуары. При полном eligible ассортименте —
+8 карточек. Showcase-product — результат business selection, не первый товар категории.
+При отсутствии eligible кандидата допустимо меньше 8; не подставлять неподходящий
+товар ради заполнения. При 0 products вся Home shelf отсутствует без пустой сетки,
+placeholder content или fake products. Loading/skeleton определяется отдельно при
+реальной server/API integration.
+
+Home ProductShelf **не slider/carousel**: без arrows, translated track, pagination,
+autoplay, loop, swipe-specific mechanics, off-screen carousel state, slider clipping
+и скрытых off-screen products. Исходная Figma служит geometry reference; её slider
+behavior сознательно заменён обычным ProductGrid. Shared slider для этой задачи не нужен.
+
+При 8 products desktop control: 4×2 full, gaps 30 px. Tablet использует общий
+listing responsive layout и compact; неполный ряд aligned to start, без horizontal
+slider/peek. Mobile 375: compact 170×272, 2 колонки, 4 ряда, общий gap X 3 px,
+gap Y 24 px. После mobile grid — navigation link **«Весь каталог» → `/catalog`**,
+не load-more и не «Показать ещё». Title link остаётся secondary path; явная mobile
+CTA после длинной grid — continuation path.
+
+### 23.5. УТВЕРЖДЕНО: upstream selection и будущие shelves
+
+Conceptual pipeline: eligible products → selection strategy → score/business ranking
+→ category/diversity constraints → ordered selection → ProductShelf → ProductGrid.
+Для первой shelf backend/CMS выбирает до одного победителя каждой верхнеуровневой
+категории и исключает preorder до передачи frontend; frontend score не рассчитывает.
+Это eligibility первой Home selection, не глобальный запрет preorder для ProductGrid.
+
+Подход соответствует границе DailyTop: frontend получает готовый ordered result.
+DailyTop не менять, не ревьюить повторно и не извлекать из него общий scoring code.
+Разные selections могут иметь разные scoring profiles: DailyTop, category showcase,
+новинки, сезонная или Mood selection.
+
+Будущие shelves («Для сна», «Для концентрации», «Для бодрости», «Осенний выбор»,
+«Новинки», редакционный выбор и другие) могут иметь собственные title, destination,
+selection strategy, scoring profile и ordered products, переиспользуя SectionTitle
+и ProductGrid без изменения ProductCard. Семантика shelf не меняет архитектуру grid.
+
+Reuse ProductGrid не означает одновременный render 1000 карточек. Для больших
+listings fetching, pagination, load-more, infinite loading и virtualization —
+отдельные concerns; не встраивать их заранее. Для первой Home shelf объём ограничен 8.
+Contract не разрешает изменения или повторный review frozen features и Header/Footer.
+
+### 23.6. ОСТАЁТСЯ ОТКРЫТЫМ
+
+Математическая формула score и веса ranking factors, backend endpoints/DTO,
+CMS schema, caching strategy, Catalog pagination strategy, infinite loading,
+virtualization, точный breakpoint full → compact и выбор container-query
+implementation не утверждены. Не фиксировать их как business facts или
+окончательные API/implementation contracts. Сохраняются правила Product Domain
+Model (8) и Incremental Code Review (20).

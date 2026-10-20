@@ -12,22 +12,25 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 /** Temporary development surface. Never exposed by the production server. */
-export default function ProductCardDemo() {
+export default async function ProductCardDemo({ searchParams }: { searchParams: Promise<{ presentation?: string; example?: string }> }) {
+  const params = await searchParams;
+  const presentations = (['full', 'compact', 'responsive'] as const).filter(value => !params.presentation || params.presentation === value);
+  const examples = productCardExamples.filter(value => !params.example || value.data.slug === params.example);
   if (process.env.NODE_ENV !== 'development') notFound();
 
   return (
     <main className={styles.demo}>
-      <h1>ProductCard · Slice 1C</h1>
+      <h1>ProductCard · Responsive + Bottom Sheet</h1>
       <p>Временная dev-страница. Favorite, выбор веса и Cart используют только локальное UI-состояние.
         Смена веса сбрасывает локальный Cart-счётчик; перезагрузка сбрасывает все изменения.
         Страна ведёт на /catalog/region/&lt;country-slug&gt;; Catalog page пока не реализована.</p>
       <p>Проверка: hover карточки, hover/focus Mood, hover длинного title; Tab → вес → Enter → стрелки → Enter/Escape.
-        В compact вес — текст, сверху только страна.</p>
-      {(['full', 'compact'] as const).map((presentation) => (
+        В compact selectable CTA открывает Bottom Sheet; Escape отменяет draft.</p>
+      {presentations.map((presentation) => (
         <section key={presentation} aria-label={presentation}>
-          <h2>{presentation === 'full' ? 'Full · 360 px' : 'Compact · 170 px'}</h2>
-          <div className={presentation === 'full' ? styles.fullGrid : styles.compactGrid}>
-            {productCardExamples.map(({ label, data, favorite }) => (
+          <h2>{presentation}</h2>
+          <div className={presentation === 'responsive' ? styles.responsiveGrid : presentation === 'full' ? styles.fullGrid : styles.compactGrid}>
+            {examples.map(({ label, data, favorite }) => (
               <div className={styles.example} key={data.slug}>
                 <h3 className={styles.exampleLabel}>{label}</h3>
                 <ProductCard data={data} presentation={presentation} favorite={favorite} />
@@ -36,17 +39,17 @@ export default function ProductCardDemo() {
           </div>
         </section>
       ))}
-      <section aria-label="Full lower boundary">
+      {!params.presentation && <section aria-label="Full lower boundary">
         <h2>Full · 320 px</h2>
         <div className={styles.boundaryGrid}>
-          {productCardExamples.map(({ label, data, favorite }) => (
+          {examples.map(({ label, data, favorite }) => (
             <div className={styles.example} key={data.slug}>
               <h3 className={styles.exampleLabel}>{label}</h3>
               <ProductCard data={data} presentation="full" favorite={favorite} />
             </div>
           ))}
         </div>
-      </section>
+      </section>}
     </main>
   );
 }

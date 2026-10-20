@@ -9,13 +9,13 @@ import { TitleMarquee } from './TitleMarquee';
 
 export function ProductCard({ data, presentation, favorite = false }: ProductCardProps) {
   const compact = presentation === 'compact';
+  const responsive = presentation === 'responsive';
   const preorder = data.purchasePresentation === 'preorder';
-  const discount = data.price.discount;
   const productHref = `/product/${encodeURIComponent(data.slug)}`;
 
   return (
     <article
-      className={`${styles.card} ${styles[presentation]} ${preorder ? styles.preorder : ''} ${discount ? styles.discount : ''}`}
+      className={`${styles.card} ${styles[presentation]} ${preorder ? styles.preorder : ''} ${data.price.discount ? styles.discount : ''}`}
       data-presentation={presentation}
       data-product-kind={data.kind}
       data-purchase-presentation={data.purchasePresentation}
@@ -26,7 +26,7 @@ export function ProductCard({ data, presentation, favorite = false }: ProductCar
         <div className={styles.artwork} aria-hidden="true">
           {data.country?.background && (
             <div className={styles.regionalBackground}>
-              <Image src={data.country.background} alt="" fill sizes={compact ? '210px' : '360px'} />
+              <Image src={data.country.background} alt="" fill sizes={responsive ? '(max-width: 1279px) 210px, 360px' : compact ? '210px' : '360px'} />
             </div>
           )}
         </div>
@@ -37,12 +37,12 @@ export function ProductCard({ data, presentation, favorite = false }: ProductCar
               alt={data.image.alt}
               width={data.image.width}
               height={data.image.height}
-              sizes={compact ? '140px' : '245px'}
+              sizes={responsive ? '(max-width: 1279px) 140px, 245px' : compact ? '140px' : '245px'}
               className={styles.productImage}
             />
           </span>
         </Link>
-        {!compact && data.kind === 'tea' && (
+        {data.kind === 'tea' && (
           <ul className={styles.moods} aria-label="Состояния">
             {data.moods.map((mood) => (
               <li key={mood.slug}>
@@ -57,25 +57,22 @@ export function ProductCard({ data, presentation, favorite = false }: ProductCar
         )}
         {data.country && (
           <Link href={`/catalog/region/${encodeURIComponent(data.country.slug)}`} className={styles.geography}>
-            {compact ? (
-              <Image src="/icons/regions/marker.svg" alt="" width={7} height={10} />
-            ) : data.country?.illustration ? (
-              <div className={styles.countryIllustration}>
+            <Image className={styles.countryMarker} src="/icons/regions/marker.svg" alt="" width={7} height={10} />
+            {data.country.illustration && (
+              <div className={styles.countryIllustration} aria-hidden="true">
                 <Image src={data.country.illustration} alt="" width={68} height={77} />
               </div>
-            ) : null}
+            )}
             <div className={styles.geographyLabels}>
               {data.country && <span><span className={styles.srOnly}>Страна: </span>{data.country.label}</span>}
             </div>
           </Link>
         )}
-        {compact && discount && <span className={styles.discountBadge}>{discount.label}</span>}
       </div>
 
       <ProductCardPurchase data={{ title: data.title, price: data.price, purchasePresentation: data.purchasePresentation, weight: data.weight }} presentation={presentation}>
         <h3 className={styles.title}>
-          {compact ? <Link href={productHref} title={data.title}>{data.title}</Link>
-            : <TitleMarquee href={productHref} title={data.title} />}
+          <TitleMarquee href={productHref} title={data.title} />
         </h3>
       </ProductCardPurchase>
       <FavoriteButton initialActive={favorite} />

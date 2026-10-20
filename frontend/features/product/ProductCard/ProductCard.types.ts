@@ -1,5 +1,5 @@
 /** UI presentation inputs only; not a Product model or a backend contract. */
-export type ProductCardPresentation = 'full' | 'compact';
+export type ProductCardPresentation = 'full' | 'compact' | 'responsive';
 
 export type ProductCardMood = Readonly<{
   slug: string;

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { ProductCardConfiguration, ProductCardData, ProductCardPresentation } from './ProductCard.types';
 import styles from './ProductCard.module.css';
+import { ProductPurchaseSheet } from './ProductPurchaseSheet';
 
 function ConfigurationControl({ options, selected, onSelect }: Readonly<{
   options: readonly ProductCardConfiguration[];
@@ -69,85 +70,90 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
   );
 }
 
-function CartAction({ compact, title }: Readonly<{ compact: boolean; title: string }>) {
-  const [quantity, setQuantity] = useState(0);
-  const addButton = useRef<HTMLButtonElement>(null);
-  const plusButton = useRef<HTMLButtonElement>(null);
-  const returnFocus = useRef(false);
-  const focusQuantity = useRef(false);
-  useEffect(() => {
-    if (quantity === 0 && returnFocus.current) {
-      addButton.current?.focus();
-      returnFocus.current = false;
-    }
-    if (quantity > 0 && focusQuantity.current) {
-      plusButton.current?.focus();
-      focusQuantity.current = false;
-    }
-  }, [quantity]);
-  // UI-only quantity: no stock authority, persistence or shared cart state.
-  if (compact && quantity > 0) return (
-    <div className={styles.quantityBar} role="group" aria-label={`Количество: ${title}`}>
-      <button type="button" aria-label="Уменьшить количество" onClick={() => {
-        returnFocus.current = quantity === 1;
-        setQuantity(quantity - 1);
-      }}>
-        <Image src="/icons/product/quantity-minus.svg" alt="" width={14} height={2} />
-      </button>
-      <span role="status" aria-live="polite">{quantity}</span>
-      <button type="button" ref={plusButton} aria-label="Увеличить количество" onClick={() => setQuantity(quantity + 1)}>
-        <Image src="/icons/product/quantity-plus.svg" alt="" width={12} height={12} />
-      </button>
-    </div>
-  );
-  return (
-    <button className={`${styles.cart} ${quantity > 0 ? styles.cartAdded : ''}`} type="button" ref={addButton}
-      aria-label={`${quantity > 0 ? `Добавить ещё, выбрано ${quantity}` : 'В корзину'}: ${title}`}
-      onClick={() => { focusQuantity.current = compact; setQuantity(quantity + 1); }}>
-      {compact && <span>В корзину</span>}
-      {quantity > 0 ? (
-        <span className={styles.filledCartIcon} aria-hidden="true">
-          <Image className={styles.cartBody} src="/icons/product/cart-filled-body.svg" alt="" width={24} height={25} />
-          <Image className={styles.cartOutline} src="/icons/product/cart-filled-outline.svg" alt="" width={29} height={35} />
-          <span>{quantity}</span>
-        </span>
-      ) : <span className={styles.cartIcon}><Image src="/icons/product/cart.svg" alt="" width={25} height={31} /></span>}
-      <span className={styles.srOnly} role="status" aria-live="polite">{quantity > 0 ? `Локально выбрано: ${quantity}` : ''}</span>
-    </button>
-  );
-}
 
-/** One state boundary for configuration, prepared price and its local Cart presentation. */
+/** One owner for current configuration and confirmed local quantity; no server Cart is simulated. */
 export function ProductCardPurchase({ data, presentation, children }: Readonly<{
   data: Pick<ProductCardData, 'title' | 'price' | 'purchasePresentation' | 'weight'>;
   presentation: ProductCardPresentation;
   children: ReactNode;
 }>) {
-  const compact = presentation === 'compact';
   const preorder = data.purchasePresentation === 'preorder';
-  const options = !compact && !preorder && data.weight?.presentation === 'selectable'
-    ? data.weight.configurations : undefined;
+  const options = !preorder && data.weight?.presentation === 'selectable' ? data.weight.configurations : undefined;
   const [selectedId, setSelectedId] = useState(options?.find(option => option.label === data.weight?.label)?.id ?? options?.[0].id);
   const selected = options?.find(option => option.id === selectedId) ?? options?.[0];
+  const [quantity, setQuantity] = useState(0);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const price = selected?.price ?? data.price;
-  const discount = price.discount;
+  const trigger = useRef<HTMLButtonElement>(null);
+  const fullAction = useRef<HTMLButtonElement>(null);
+  const compactPlus = useRef<HTMLButtonElement>(null);
+  const quantityAction = useRef<'add' | 'remove' | null>(null);
+  const sheetId = useId();
+  useEffect(() => {
+    if (quantityAction.current === 'add') compactPlus.current?.focus();
+    if (quantityAction.current === 'remove') trigger.current?.focus();
+    quantityAction.current = null;
+  }, [quantity]);
+  const openSheet = () => { if (options && !preorder) setSheetOpen(true); };
+  const changeInline = (option: ProductCardConfiguration) => {
+    if (option.id !== selected?.id) { setSelectedId(option.id); setQuantity(0); }
+  };
   return (
     <>
       <div className={styles.content}>
         {children}
-        {discount && <div className={styles.originalPrice}>
-          <del><span className={styles.srOnly}>Цена без скидки: </span>{discount.original}</del>
-          {!compact && <span>{discount.label}</span>}
+        {price.discount && <div className={styles.originalPrice}>
+          <del><span className={styles.srOnly}>Цена без скидки: </span>{price.discount.original}</del>
+          <span className={styles.fullOnly}>{price.discount.label}</span>
         </div>}
         <p className={styles.price} aria-live={options ? 'polite' : undefined} aria-atomic="true">
           <span className={styles.srOnly}>Цена: </span>{price.current}
         </p>
-        {!compact && preorder ? <span className={styles.preorderLabel}>Предзаказ</span>
-          : selected && options ? <ConfigurationControl options={options} selected={selected} onSelect={option => setSelectedId(option.id)} />
-          : data.weight ? <span className={styles.weight}><span className={styles.srOnly}>Вес: </span>{data.weight.label}</span> : null}
+        {preorder ? <>
+          <span className={`${styles.preorderLabel} ${styles.fullOnly}`}>Предзаказ</span>
+          {data.weight && <span className={`${styles.weight} ${styles.compactOnly}`}><span className={styles.srOnly}>Вес: </span>{data.weight.label}</span>}
+        </> : selected && options ? <>
+          <div className={styles.fullOnly} style={{ display: 'contents' }}>
+            <ConfigurationControl options={options} selected={selected} onSelect={changeInline} />
+          </div>
+          <span className={`${styles.weight} ${styles.compactOnly}`}><span className={styles.srOnly}>Вес: </span>{selected.label}</span>
+        </> : data.weight ? <span className={styles.weight}><span className={styles.srOnly}>Вес: </span>{data.weight.label}</span> : null}
       </div>
-      {preorder ? compact && <div className={styles.preorderBar}>Предзаказ</div>
-        : <CartAction key={selected?.id ?? 'static'} compact={compact} title={data.title} />}
+      {price.discount && <span className={styles.discountBadge}>{price.discount.label}</span>}
+      {preorder ? <div className={`${styles.preorderBar} ${styles.compactOnly}`}>Предзаказ</div> : <>
+        <button ref={fullAction} className={`${styles.cart} ${styles.fullOnly} ${quantity > 0 ? styles.cartAdded : ''}`} type="button"
+          aria-label={`${quantity > 0 ? `Добавить ещё, выбрано ${quantity}` : 'В корзину'}: ${data.title}`}
+          onClick={() => setQuantity(quantity + 1)}>
+          {quantity > 0 ? <span className={styles.filledCartIcon} aria-hidden="true">
+            <Image className={styles.cartBody} src="/icons/product/cart-filled-body.svg" alt="" width={24} height={25} />
+            <Image className={styles.cartOutline} src="/icons/product/cart-filled-outline.svg" alt="" width={29} height={35} />
+            <span>{quantity}</span>
+          </span> : <span className={styles.cartIcon}><Image src="/icons/product/cart.svg" alt="" width={25} height={31} /></span>}
+          <span className={styles.srOnly} role="status">{quantity > 0 ? `Локально выбрано: ${quantity}` : ''}</span>
+        </button>
+        {quantity > 0 ? <div className={`${styles.quantityBar} ${styles.compactOnly}`} role="group" aria-label={`Количество: ${data.title}`}>
+          <button type="button" aria-label="Уменьшить количество" onClick={() => {
+            quantityAction.current = quantity === 1 ? 'remove' : null; setQuantity(quantity - 1);
+          }}><Image src="/icons/product/quantity-minus.svg" alt="" width={14} height={2} /></button>
+          {options ? <button ref={trigger} type="button" className={styles.editQuantity} aria-label={`Изменить конфигурацию и количество: ${data.title}`}
+            aria-haspopup="dialog" aria-controls={sheetOpen ? sheetId : undefined} onClick={openSheet}>{quantity}</button>
+            : <span role="status">{quantity}</span>}
+          <button ref={compactPlus} type="button" aria-label="Увеличить количество" onClick={() => setQuantity(quantity + 1)}>
+            <Image src="/icons/product/quantity-plus.svg" alt="" width={12} height={12} />
+          </button>
+        </div> : <button ref={trigger} type="button" className={`${styles.cart} ${styles.compactOnly}`}
+          aria-label={`${options ? 'Добавить в корзину' : 'В корзину'}: ${data.title}`}
+          aria-haspopup={options ? 'dialog' : undefined} aria-controls={sheetOpen ? sheetId : undefined}
+          onClick={options ? openSheet : () => { quantityAction.current = 'add'; setQuantity(quantity + 1); }}>
+          <span>В корзину</span><span className={styles.cartIcon}><Image src="/icons/product/cart.svg" alt="" width={25} height={31} /></span>
+        </button>}
+      </>}
+      {sheetOpen && selected && options && !preorder && <ProductPurchaseSheet id={sheetId} title={data.title}
+        options={options} initialConfiguration={selected} initialQuantity={quantity > 0 ? quantity : 1}
+        responsive={presentation === 'responsive'} triggerRef={trigger} fallbackRef={fullAction}
+        onCancel={() => setSheetOpen(false)} onConfirm={(configuration, amount) => {
+          setSelectedId(configuration.id); setQuantity(amount); setSheetOpen(false);
+        }} />}
     </>
   );
 }
