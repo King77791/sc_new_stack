@@ -2194,6 +2194,17 @@ Product domain model.
 
 ## 22. Home CategoriesSection
 
+Статус: **CategoriesSection — READY / FROZEN 🔒**. Feature завершена и стабильна.
+Пройдены Figma Discovery, Contract, Implementation, Implementation QA, Manual Review
+и Incremental Code Review. Findings: Critical/High/Medium/Low/Future — 0;
+verdict: `NO FIX GATE REQUIRED`.
+
+Не проводить повторный review и не выполнять refactor/polishing без конкретного
+сигнала. Утверждённый UX/business contract сохраняется. Изменения допустимы только
+при конкретной regression, интеграции реального backend/API, изменении business
+requirements, необходимости интеграции с будущим Catalog или подтверждённой
+архитектурной зависимости от новой feature.
+
 CategoriesSection — текущая Home feature после PromoSection. ProductCard,
 PromoSection, PromoBanner, UpcomingEventPromo и DailyTop остаются READY / FROZEN;
 подключение CategoriesSection не разрешает их изменение или повторный review.
