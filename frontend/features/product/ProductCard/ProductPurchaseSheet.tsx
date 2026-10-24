@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type PointerEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { ProductCardConfiguration } from './ProductCard.types';
 import styles from './ProductPurchaseSheet.module.css';
@@ -22,6 +22,27 @@ export function ProductPurchaseSheet({ id, title, options, initialConfiguration,
   const [configuration, setConfiguration] = useState(initialConfiguration);
   const [quantity, setQuantity] = useState(initialQuantity);
   const dialog = useRef<HTMLDialogElement>(null);
+  const gesture = useRef<{ id: number; x: number; y: number } | null>(null);
+  const suppressHandleClick = useRef(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const moveHandle = (event: PointerEvent<HTMLButtonElement>) => {
+    const start = gesture.current;
+    if (!start || start.id !== event.pointerId) return;
+    const dx = Math.abs(event.clientX - start.x);
+    const dy = event.clientY - start.y;
+    if (Math.max(dx, Math.abs(dy)) > 8) suppressHandleClick.current = true;
+    setDragOffset(dy > dx * 1.5 ? Math.max(0, dy) : 0);
+  };
+  const finishGesture = (event: PointerEvent<HTMLButtonElement>, cancelled = false) => {
+    const start = gesture.current;
+    if (!start || start.id !== event.pointerId) return;
+    gesture.current = null;
+    setDragOffset(0);
+    const dx = Math.abs(event.clientX - start.x);
+    const dy = event.clientY - start.y;
+    if (Math.max(dx, Math.abs(dy)) > 8) suppressHandleClick.current = true;
+    if (!cancelled && dy >= 64 && dy > dx * 1.5) onCancel();
+  };
   const cancel = useRef(onCancel);
   cancel.current = onCancel;
   const restoreFocus = useRef<() => void>(() => {});
@@ -56,16 +77,35 @@ export function ProductPurchaseSheet({ id, title, options, initialConfiguration,
 
   return createPortal(
     <dialog ref={dialog} id={id} aria-modal="true" aria-labelledby={`${id}-title`} className={styles.sheet}
+      style={{ transform: `translateY(${dragOffset}px)` }} data-dragging={dragOffset > 0 || undefined}
       onCancel={event => { event.preventDefault(); onCancel(); }}>
       <div className={styles.header}>
-        <div className={styles.handle} aria-hidden="true" />
+        <div className={styles.topControls}>
+          <button type="button" className={styles.handle} aria-label="Закрыть выбор товара"
+            onPointerDown={event => {
+              suppressHandleClick.current = false;
+              if (event.pointerType === 'mouse' || !event.isPrimary) return;
+              gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={moveHandle} onPointerUp={event => finishGesture(event)}
+            onPointerCancel={event => finishGesture(event, true)}
+            onLostPointerCapture={event => finishGesture(event, true)}
+            onKeyDown={() => { suppressHandleClick.current = false; }}
+            onClick={() => {
+              if (!suppressHandleClick.current) onCancel();
+              suppressHandleClick.current = false;
+            }} />
+          <button type="button" className={styles.close} aria-label="Закрыть панель" onClick={onCancel}><span aria-hidden="true">×</span></button>
+        </div>
         <div className={styles.summary}>
           <h2 id={`${id}-title`}>{title}</h2>
           <p aria-live="polite"><span>{configuration.price.current}</span><small>/{configuration.label}</small></p>
         </div>
         <div className={styles.options} role="group" aria-label="Выберите вес">
-          {options.map(option => <button key={option.id} type="button" aria-pressed={configuration.id === option.id}
-            onClick={() => setConfiguration(option)}>{option.label}</button>)}
+          {options.map(option => <button key={option.id} type="button" disabled={option.disabled}
+            aria-pressed={!option.disabled && configuration.id === option.id}
+            onClick={() => { if (!option.disabled) setConfiguration(option); }}>{option.label}</button>)}
         </div>
       </div>
       <div className={styles.actions}>

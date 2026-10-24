@@ -32,6 +32,8 @@ export type ProductCardConfiguration = Readonly<{
   id: string;
   label: string;
   price: ProductCardPrice;
+  /** Explicit presentation availability; supplied by fixtures, later by an API adapter. */
+  disabled?: boolean;
 }>;
 
 type CardContent = Readonly<{

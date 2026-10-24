@@ -297,6 +297,7 @@
 .weightMenu li + li { margin-top: 4px; }
 .weightMenu [aria-selected='true'] { color: var(--color-cream-gold); }
 .weightMenu [data-active='true'] { background: rgb(255 255 255 / 10%); opacity: 1; }
+.weightMenu [aria-disabled='true'] { opacity: .35; cursor: not-allowed; }
 .full .marquee > span { display: block; overflow: hidden; text-overflow: ellipsis; }
 .weight > img { transition: transform 0.2s ease-in-out; }
 .weight[aria-expanded='true'] > img { transform: rotate(180deg); }
@@ -328,7 +329,6 @@
 .compact .title a, .compact .marquee > span { white-space: normal; }
 .compact .marquee > span { display: inline; }
 .compact .discountBadge { top: 134px; bottom: auto; left: 13px; }
-.quantityBar .editQuantity { flex: 1; border-radius: 0; background: transparent; font-size: 20px; }
 .fullOnly, .compactOnly { /* Classes also identify focus restoration targets. */ }
 
 @media (min-width: 1280px) {

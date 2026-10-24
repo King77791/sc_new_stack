@@ -298,6 +298,9 @@ CSS Modules располагаются рядом с соответствующ�
 - Mobile — 375 px.
 
 Эти размеры являются контрольными макетами, а не единственными поддерживаемыми viewport.
+Минимальная поддерживаемая ширина интерфейса — 375 px. Viewport 320/360 px —
+только robustness observations, вне обязательного Definition of Done;
+не усложнять production CSS специально ради ширин <375 px.
 
 Интерфейс должен корректно работать и между контрольными размерами.
 
@@ -615,13 +618,18 @@ Legacy `productYear` соответствует году урожая там, г
 - 200 g;
 - 250 g.
 
-Базовые Purchase Configuration для весового Tea: 50 / 100 / 200 / 250 г.
-Фактически доступные configurations определяет backend по stock;
-frontend не вычисляет их доступность самостоятельно. Набор доступных
-весов может отличаться между продуктами; глобальный hardcoded selector
-для всех товаров не вводится.
-
-Не hardcode глобальный список доступных весов для всех чаёв.
+Стандартный weight-based Tea имеет ровно четыре canonical Purchase Configurations
+в порядке `50 г.` / `100 г.` / `200 г.` / `250 г.`; labels отображаются с пробелом
+перед `г.` и точкой. Это стабильные четыре UI slots: insufficient stock не удаляет
+configuration, unavailable option остаётся visible и disabled, не выбирается мышью,
+touch или keyboard и не меняет configuration/price/quantity. Full selector и compact
+Bottom Sheet используют одну availability model. Backend определяет availability
+каждой configuration; frontend не вычисляет её из raw stock. До API допустим только
+явный presentation disabled flag в fixtures, без stock calculation или backend DTO.
+Default — первая canonical configuration; если она unavailable, правило initial
+selection/fallback требует отдельного API/business решения: не выбирать disabled
+option и не придумывать автоматическую замену. Это правило не применяется к
+fixed-weight Tea, Ceramics и другим non-weight-configurable товарам.
 
 #### Fixed-weight piece products
 
@@ -792,7 +800,7 @@ Available nominal weights:
 
 Выбранный вес не изменяет SKU Product в текущей бизнес-модели.
 
-Набор доступных весов может отличаться между Product.
+Состав стандартных slots и их availability определяются правилом 8.10.
 
 ---
 
@@ -1278,8 +1286,8 @@ Frontend должен отображать актуальные данные bac
 5. SKU относится к Product и в текущей бизнес-модели не меняется
    при выборе другой весовой фасовки.
 
-6. Набор доступных весов может отличаться между Product и не должен
-   быть глобально hardcoded.
+6. Стандартный weight-based Tea соблюдает canonical slots и disabled availability
+   из 8.10; не переносить это правило на другие способы продажи Product.
 
 7. Для weight-based Product доступность конкретного веса зависит
    от фактического остатка продукта.
@@ -1496,10 +1504,9 @@ domain semantics.
   Purchase Configuration прямо в карточке, без перехода на Product Page.
   При выборе configuration немедленно меняются selected configuration
   и display price на готовое значение для неё.
-  Для текущей реализации и fixtures default Purchase Configuration = 50 г,
-  базовый порядок — 50 / 100 / 200 / 250 г; initial display price и discount
-  соответствуют 50 г. Будущий backend определяет фактически доступные
-  configurations и initial selection исходя из server authority.
+  Default, canonical labels/slots и unavailable state следуют правилу 8.10;
+  initial display price и discount соответствуют default configuration.
+  Будущий backend предоставляет availability и initial selection.
   Dropdown открывается вверх без изменения размеров карточки; arrow
   отражает open/closed state с учётом prefers-reduced-motion.
 - В compact weight не является интерактивным control: например `50 г`
@@ -1547,8 +1554,8 @@ presentation значением. Ограничение DailyTop описано 
 
 Это уточнение заменяет прежнее Future-only описание mobile purchase panel и
 прямое добавление configurable товара compact CTA. Обновляется contract;
-Для Unified Responsive Architecture + Compact Purchase Bottom Sheet freeze узко
-снят отдельным implementation scope; остальные feature freeze сохраняются.
+Unified Responsive Architecture + Compact Purchase Bottom Sheet и Final Fix Gate
+завершены; ProductCard снова frozen. Остальные feature freeze сохраняются.
 
 Full сохраняет inline configuration selector, готовую цену выбранной configuration
 и Cart interaction в карточке. Compact CTA «Добавить в корзину» для selectable
@@ -1559,8 +1566,8 @@ Full сохраняет inline configuration selector, готовую цену �
 равен окончательной configuration, выбранной для Cart.
 
 Full inline selector и Bottom Sheet работают с одним domain concept Purchase
-Configuration (8.15), без DesktopWeightOption/MobileWeightOption. Доступные options
-задаются данными товара/backend, не глобальным UI hardcode. Fixed-weight Tea,
+Configuration (8.15), без DesktopWeightOption/MobileWeightOption. Slots и availability
+следуют 8.10 и данным товара/backend, без raw-stock calculation. Fixed-weight Tea,
 Ceramics и другие non-configurable товары показывают только релевантные controls,
 без фиктивного weight selector. Preorder не открывает обычный Cart flow и не может
 быть добавлен в Cart через панель.
@@ -1576,8 +1583,8 @@ Cart; подтверждение передаёт выбранную configurati
 matchMedia для выбора всей карточки. Resize сам по себе не является Cart action и
 не должен молча терять выбранную configuration. Full selection может стать initial
 selection панели; пользователь всё равно выбирает/подтверждает weight и quantity.
-Неподтверждённая selection панели остаётся transient; её безопасное сохранение как
-current configuration допустимо, но не означает добавления в Cart.
+Неподтверждённые configuration и quantity панели остаются transient: любой dismissal,
+включая responsive compact → full, отбрасывает draft и сохраняет последнее confirmed state.
 
 Bottom Sheet — interactive Client Component: open/close, draft configuration и
 quantity, confirmation и modal lifecycle. Требуются dialog semantics/name, focus
@@ -1602,15 +1609,24 @@ Escape и переход responsive → full отменяют draft. Реаль�
 configuration сбрасывает quantity. Fixed-weight Tea/Ceramics сохраняют прямой
 compact action без Sheet и фиктивного selector; preorder исключён из Cart flow.
 
-Sheet использует native modal dialog с transparent backdrop, без click-dismiss,
-drag и close icon. Scroll lock действует только при открытии; matchMedia listener
+Sheet использует native modal dialog с transparent backdrop, без backdrop click-dismiss.
+Handle (touch target 44 px), close icon и Escape отменяют draft. Handle поддерживает
+Pointer Events swipe вниз: минимум 64 px и вертикальное смещение > 1.5 × горизонтального;
+mouse drag не включён. Незавершённый/горизонтальный жест не закрывает панель.
+Weight slots из 8.10 равномерно заполняют ширину с gap 7 px;
+title занимает остаток ширины рядом с ограниченной price/reference-weight group.
+В confirmed compact selectable карточке обе кнопки −/+ открывают Sheet без изменения
+quantity; число неинтерактивно. Для non-configurable товаров прямые actions сохраняются.
+Scroll lock действует только при открытии; matchMedia listener
 существует только у открытой responsive Sheet для cleanup на full. Focus возвращается
 на видимый compact trigger, при его скрытии — на full Cart action этой карточки.
 Готовые prices/options берутся из данных; reference label — label configuration,
 без price calculation и выдуманного stock/max quantity. Backend Cart отсутствует.
 
-Статус: **PRODUCTCARD RESPONSIVE REFACTOR READY FOR MANUAL REVIEW**.
-Это не повторный freeze и не разрешение продолжать ProductGrid/ProductShelf/Home.
+Статус: **ProductCard — READY / FROZEN 🔒**.
+Final Incremental Review / Final Fix Gate завершены. Five-options finding закрыт:
+NOT APPLICABLE — violates approved four-weight contract. Это не разрешение
+продолжать ProductGrid/ProductShelf/Home или начинать Cart architecture.
 
 ### Implementation details / Open / Future
 
@@ -1626,7 +1642,7 @@ Notification system и отдельный desktop/tablet Cart Widget — буд�
 задачи вне текущего ProductCard implementation scope.
 Compact/mobile Cart допускает только минимальное локальное testing
 согласно 8.27. Compact purchase Bottom Sheet имеет утверждённый UX contract выше;
-его реализация описана выше и ожидает отдельного Manual Review. Это не
+его реализация описана выше и принята после Manual Review / Final Fix Gate. Это не
 разрешает реализацию отдельного Cart Widget или имитацию backend synchronization.
 ProductCard API DTO, реальные Cart/Favorite endpoints и окончательные
 backend validation/error contracts не утверждены.
@@ -2377,7 +2393,8 @@ desktop/tablet/mobile adaptations. Следующие продуктовые р�
 
 Переиспользуемый presentation primitive — `ProductGrid`, размещающий существующие
 `ProductCard[]`; не создавать вместо него CatalogComponent или shared slider.
-ProductCard остаётся READY / FROZEN (8.36, 21): переиспользовать `full`/`compact`
+ProductCard остаётся READY / FROZEN (8.36, 21): переиспользовать существующие
+`full` / `compact` / CSS-owned `responsive` presentations
 без изменения API, внутренней реализации, альтернативной карточки или локальной копии.
 
 ProductGrid получает ordered collection, сохраняет входной порядок, рендерит

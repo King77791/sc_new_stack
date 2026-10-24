@@ -13,9 +13,11 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
 }>) {
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | undefined>(selected.id);
-  const activeOption = options.find(option => option.id === activeId)
-    ?? options.find(option => option.id === selected.id) ?? options[0];
+  const enabledOptions = options.filter(option => !option.disabled);
+  const activeOption = enabledOptions.find(option => option.id === activeId)
+    ?? enabledOptions.find(option => option.id === selected.id);
   const active = options.findIndex(option => option.id === activeOption?.id);
+  const enabledIndex = enabledOptions.findIndex(option => option.id === activeOption?.id);
   if (activeId !== activeOption?.id) setActiveId(activeOption?.id);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -31,7 +33,7 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
     return () => document.removeEventListener('pointerdown', outside);
   }, [open]);
   const close = () => { setOpen(false); trigger.current?.focus(); };
-  const choose = (option: ProductCardConfiguration | undefined) => { if (!option) return; onSelect(option); close(); };
+  const choose = (option: ProductCardConfiguration | undefined) => { if (!option || option.disabled) return; onSelect(option); close(); };
   const show = () => { setActiveId(selected.id); setOpen(true); };
   return (
     <div className={styles.weightControl} ref={root} onBlur={(event) => {
@@ -52,17 +54,18 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
           onKeyDown={(event) => {
             switch (event.key) {
               case 'Escape': event.preventDefault(); close(); break;
-              case 'ArrowDown': event.preventDefault(); setActiveId(options[(active + 1) % options.length]?.id); break;
-              case 'ArrowUp': event.preventDefault(); setActiveId(options[(active - 1 + options.length) % options.length]?.id); break;
-              case 'Home': event.preventDefault(); setActiveId(options[0]?.id); break;
-              case 'End': event.preventDefault(); setActiveId(options[options.length - 1]?.id); break;
+              case 'ArrowDown': event.preventDefault(); setActiveId(enabledOptions[(enabledIndex + 1) % enabledOptions.length]?.id); break;
+              case 'ArrowUp': event.preventDefault(); setActiveId(enabledOptions[(enabledIndex - 1 + enabledOptions.length) % enabledOptions.length]?.id); break;
+              case 'Home': event.preventDefault(); setActiveId(enabledOptions[0]?.id); break;
+              case 'End': event.preventDefault(); setActiveId(enabledOptions[enabledOptions.length - 1]?.id); break;
               case 'Enter': case ' ': event.preventDefault(); choose(activeOption); break;
             }
           }}>
           {options.map((option, index) => (
             <li key={option.id} id={`${id}-${index}`} role="option"
-              aria-selected={option.id === selected.id} data-active={index === active}
-              onPointerMove={() => setActiveId(option.id)} onClick={() => choose(option)}>{option.label}</li>
+              aria-selected={!option.disabled && option.id === selected.id} aria-disabled={option.disabled || undefined}
+              data-active={!option.disabled && index === active}
+              onPointerMove={() => { if (!option.disabled) setActiveId(option.id); }} onClick={() => choose(option)}>{option.label}</li>
           ))}
         </ul>
       )}
@@ -79,8 +82,9 @@ export function ProductCardPurchase({ data, presentation, children }: Readonly<{
 }>) {
   const preorder = data.purchasePresentation === 'preorder';
   const options = !preorder && data.weight?.presentation === 'selectable' ? data.weight.configurations : undefined;
-  const [selectedId, setSelectedId] = useState(options?.find(option => option.label === data.weight?.label)?.id ?? options?.[0].id);
-  const selected = options?.find(option => option.id === selectedId) ?? options?.[0];
+  // An unavailable initial configuration needs an explicit API/business decision, not a UI fallback.
+  const [selectedId, setSelectedId] = useState(options?.find(option => option.label === data.weight?.label && !option.disabled)?.id);
+  const selected = options?.find(option => option.id === selectedId && !option.disabled);
   const [quantity, setQuantity] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const price = selected?.price ?? data.price;
@@ -94,8 +98,11 @@ export function ProductCardPurchase({ data, presentation, children }: Readonly<{
     if (quantityAction.current === 'remove') trigger.current?.focus();
     quantityAction.current = null;
   }, [quantity]);
-  const openSheet = () => { if (options && !preorder) setSheetOpen(true); };
+  const openSheet = (event: { currentTarget: HTMLButtonElement }) => {
+    if (options && selected && !preorder) { trigger.current = event.currentTarget; setSheetOpen(true); }
+  };
   const changeInline = (option: ProductCardConfiguration) => {
+    if (option.disabled) return;
     if (option.id !== selected?.id) { setSelectedId(option.id); setQuantity(0); }
   };
   return (
@@ -122,6 +129,7 @@ export function ProductCardPurchase({ data, presentation, children }: Readonly<{
       {price.discount && <span className={styles.discountBadge}>{price.discount.label}</span>}
       {preorder ? <div className={`${styles.preorderBar} ${styles.compactOnly}`}>Предзаказ</div> : <>
         <button ref={fullAction} className={`${styles.cart} ${styles.fullOnly} ${quantity > 0 ? styles.cartAdded : ''}`} type="button"
+          disabled={Boolean(options && !selected)}
           aria-label={`${quantity > 0 ? `Добавить ещё, выбрано ${quantity}` : 'В корзину'}: ${data.title}`}
           onClick={() => setQuantity(quantity + 1)}>
           {quantity > 0 ? <span className={styles.filledCartIcon} aria-hidden="true">
@@ -132,16 +140,21 @@ export function ProductCardPurchase({ data, presentation, children }: Readonly<{
           <span className={styles.srOnly} role="status">{quantity > 0 ? `Локально выбрано: ${quantity}` : ''}</span>
         </button>
         {quantity > 0 ? <div className={`${styles.quantityBar} ${styles.compactOnly}`} role="group" aria-label={`Количество: ${data.title}`}>
-          <button type="button" aria-label="Уменьшить количество" onClick={() => {
+          <button ref={options ? trigger : undefined} type="button"
+            aria-label={options ? `Открыть управление товаром и количеством: ${data.title}` : 'Уменьшить количество'}
+            aria-haspopup={options ? 'dialog' : undefined} aria-controls={sheetOpen ? sheetId : undefined}
+            onClick={options ? openSheet : () => {
             quantityAction.current = quantity === 1 ? 'remove' : null; setQuantity(quantity - 1);
           }}><Image src="/icons/product/quantity-minus.svg" alt="" width={14} height={2} /></button>
-          {options ? <button ref={trigger} type="button" className={styles.editQuantity} aria-label={`Изменить конфигурацию и количество: ${data.title}`}
-            aria-haspopup="dialog" aria-controls={sheetOpen ? sheetId : undefined} onClick={openSheet}>{quantity}</button>
-            : <span role="status">{quantity}</span>}
-          <button ref={compactPlus} type="button" aria-label="Увеличить количество" onClick={() => setQuantity(quantity + 1)}>
+          <span role="status">{quantity}</span>
+          <button ref={compactPlus} type="button"
+            aria-label={options ? `Открыть управление товаром и количеством: ${data.title}` : 'Увеличить количество'}
+            aria-haspopup={options ? 'dialog' : undefined} aria-controls={sheetOpen ? sheetId : undefined}
+            onClick={options ? openSheet : () => setQuantity(quantity + 1)}>
             <Image src="/icons/product/quantity-plus.svg" alt="" width={12} height={12} />
           </button>
         </div> : <button ref={trigger} type="button" className={`${styles.cart} ${styles.compactOnly}`}
+          disabled={Boolean(options && !selected)}
           aria-label={`${options ? 'Добавить в корзину' : 'В корзину'}: ${data.title}`}
           aria-haspopup={options ? 'dialog' : undefined} aria-controls={sheetOpen ? sheetId : undefined}
           onClick={options ? openSheet : () => { quantityAction.current = 'add'; setQuantity(quantity + 1); }}>
