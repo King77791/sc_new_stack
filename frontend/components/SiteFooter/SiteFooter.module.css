@@ -1,4 +1,4 @@
-.footer { flex: none; padding: 40px 16px; background: var(--color-footer-background); color: white; font-size: 24px; line-height: 1.25; }
+.footer { z-index: 2; flex: none; padding: 40px 16px; background: var(--color-footer-background); color: white; font-size: 24px; line-height: 1.25; }
 .content { display: flex; flex-wrap: wrap; gap: 40px; max-width: 1530px; margin-inline: auto; align-items: flex-start; }
 .navigation { flex: 1 1 340px; min-width: 0; max-width: 750px; padding-inline: 16px; display: flex; flex-direction: column; gap: 16px; }
 .catalog { display: flex; flex-direction: column; gap: 8px; }

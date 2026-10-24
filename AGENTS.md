@@ -2511,3 +2511,104 @@ virtualization, точный breakpoint full → compact и выбор container
 implementation не утверждены. Не фиксировать их как business facts или
 окончательные API/implementation contracts. Сохраняются правила Product Domain
 Model (8) и Incremental Code Review (20).
+
+## 24. CartWidget — утверждённый presentation / layer contract
+
+Статус: **CARTWIDGET POLISHING READY FOR FIX GATE**. Discovery и visual Manual Review утверждены;
+реализован изолированный presentation component и dev QA. Это не freeze и не
+production integration. Не создавать Cart store, не подключать widget в production
+root layout, не менять ProductCard/Header, не реализовывать Basket/Notification
+или ProductGrid без отдельного scope. Frozen features сохраняют свои ограничения,
+кроме явно разрешённой targeted Footer CSS integration delta ниже.
+
+### 24.1. Presentation и state ownership
+
+CartWidget desktop-only: CSS visibility при viewport >=1280 px; ниже presentation
+скрыта без очистки Cart data или expanded state. Empty (`items.length === 0`) не
+имеет визуального представления; первое non-empty появление всегда collapsed.
+Widget нельзя dismiss, пока есть позиции. Count button и отдельный chevron button
+раскрывают содержимое; expanded chevron сворачивает его. X отсутствует, верхний
+правый угол collapsed скруглён. Outside click ничего не делает; Escape не обязан
+сворачивать widget, поскольку это не modal/dialog.
+
+`itemCount = items.length` — количество CartItem positions, не totalQuantity.
+Русское склонение: позиция / позиции / позиций. CartItem identity из 8.28 сохраняется;
+разные configurations одного Product представлены разными стабильными item IDs.
+
+Presentation API: `items`, `onRemoveItem(itemId)`. Строка получает `id`, `slug`, `title`,
+`displayLinePrice`, optional `configurationLabel`, `quantity`. displayLinePrice —
+готовая итоговая цена ВСЕЙ строки с учётом quantity; configurationLabel описывает
+ОДНУ единицу и не умножается визуально на quantity. Frontend не рассчитывает line
+price, stock или availability. Формат selectable Tea labels следует 8.10.
+Title — настоящий Next.js Link на `/product/${encodeURIComponent(slug)}` по существующему
+Product routing contract. Название отображается полностью с естественным переносом
+по словам: ellipsis, nowrap, line-clamp и обрезание title запрещены. Link и remove —
+раздельные controls; remove не инициирует navigation. Product image, quantity controls
+и configuration selector отсутствуют. Помимо Product navigation доступен только
+removal intent; canonical items меняет owner
+через обновление props. После удаления widget остаётся expanded, если позиции есть;
+после последней позиции исчезает. CartWidget владеет только expanded UI state,
+не копией items, pricing или Cart. Dev harness data — только QA, не production store.
+
+### 24.2. Visual geometry и accessibility
+
+Figma reference: 145:43414 и variants 145:43415 / 145:43455 / 145:43503 / 145:43549.
+Width 400 px; collapsed height 57 px. Expanded Figma references с однострочными
+titles для 1/2/3 rows — 170/226/282 px, не фиксированные высоты при переносе title.
+Background rgba(0,32,33,.8), backdrop blur 20 px, border 2 px white .1, radius 20 px,
+Cera Pro Regular 400; Cream Gold использует существующий token. CartItem reference
+48 px — reference/minimum однострочной CartItem, не обязательная fixed height.
+Многострочный title увеличивает строку внутри scrollable ItemsViewport, без уменьшения
+font-size и без изменения общего max-height 40vh. Gap между строками 8 px.
+Expanded header divider — 1 px white .1.
+
+Expanded max-height 40vh. Flex-column layout сохраняет header и footer navigation
+неподвижными; только ItemsViewport имеет min-height:0 и overflow-y:auto. При коротком
+списке scrollbar отсутствует. Экстремально низкие desktop heights около <305 px
+не входят в обязательный UI contract; не вводить compact-height mode или уменьшение
+controls/typography. Basket navigation: link «Перейти в корзину» → `/basket`.
+
+Named aside/region, настоящие count/chevron/remove buttons, aria-expanded и
+aria-controls; remove accessible name различает title и configuration. Никакого
+focus trap, dialog semantics или scroll lock. После remove фокус — на следующем
+remove, иначе предыдущем. После последней позиции final focus target остаётся
+integration boundary будущего Cart layer/Header: исчезнувшие controls не фокусировать.
+Декоративная animation не обязательна; при добавлении уважать reduced motion.
+
+### 24.3. Positioning и Footer integration
+
+CartWidget фиксирован относительно viewport: `position: fixed`, `right: 1rem`,
+`bottom: 1rem`. Его stacking layer выше основного page content, но ниже SiteFooter:
+`page content < CartWidget < SiteFooter`. Когда Footer входит в viewport, его слой
+естественно и постепенно перекрывает соответствующую область fixed widget;
+при прокрутке обратно widget снова появляется с прежним expanded/collapsed state.
+Cart state и viewport offsets при этом не меняются. Header сохраняет отдельный
+существующий layer contract. Рекомендация размещать widget выше Footer отменена.
+
+Эффект обеспечивается только stacking/layer architecture. Не использовать scroll
+listeners, IntersectionObserver, вычисление позиции Footer, dynamic bottom,
+scroll-dependent transform, JS hide/show, fixed → absolute или exit animation.
+Конкретные z-index numbers здесь не утверждаются; прежнее предложение `10`
+не является contract. Перед implementation повторно проверить stacking contexts
+shell/родителей, Header, SiteFooter и существующие global layer tokens.
+
+Предварительная read-only проверка shell: `.app-content` не создаёт отдельный stacking
+context; корень SiteFooter ранее не имел собственного z-index. Z-index вложенного
+footer nav не поднимал фон всего Footer. Для presentation QA выполнена минимальная
+targeted CSS-корректировка SiteFooter: z-index на существующем root flex item создаёт
+слой выше widget. Только dev content изолирован в нижнем context; production shell
+не подключён к CartWidget. При будущей shell integration сохранить весь порядок
+content/widget/Footer и отдельный Header layer. Это integration delta, не reopening
+или refactor Footer. Не менять markup, visual geometry, responsive behavior,
+typography, content, links или другие Footer styles; scroll logic запрещена.
+Использовать минимальное CSS-решение с учётом существующих stacking contexts и
+достаточных layer values, без заранее заданных z-index numbers. В implementation
+report отдельно указать CSS-корректировку SiteFooter, её необходимость и проверенные
+stacking contexts shell/родителей, page content, CartWidget, SiteFooter и Header.
+
+Targeted browser QA при реализации: для non-empty Cart отдельно в collapsed и
+expanded state прокрутить к Footer, проверить частичное и полное перекрытие
+соответствующей области widget, затем прокрутить обратно. Не допускаются скачок,
+reposition, преждевременное исчезновение или изменение `bottom: 1rem`, UI state
+и Cart state. Сценарий проверен в изолированном dev harness для обоих UI states;
+при production shell integration его необходимо повторить с настоящим Cart consumer.

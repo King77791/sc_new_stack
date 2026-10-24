@@ -1,0 +1,10 @@
+.demo { min-height: 180vh; padding: 48px 40px 64px; background: #e9ece8; }
+/* Keep QA content below the widget without changing the production shell. */
+.content { position: relative; z-index: 0; isolation: isolate; max-width: 800px; }
+.content h1 { font-size: 28px; font-weight: 500; line-height: 1.25; letter-spacing: normal; }
+.content h2 { font-size: 22px; font-weight: 500; }
+.content p { font-size: 16px; line-height: 1.5; }
+.scenarios { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 24px; }
+.scenarios button { padding: 10px 16px; border: 1px solid #51675e; border-radius: 8px; background: var(--color-header-green); color: white; font: inherit; cursor: pointer; }
+.scenarios button:focus-visible { outline: 2px solid var(--color-header-green); outline-offset: 3px; }
+.scrollGuide { margin-top: 50vh; padding: 24px; border: 1px dashed #51675e; border-radius: 12px; }
