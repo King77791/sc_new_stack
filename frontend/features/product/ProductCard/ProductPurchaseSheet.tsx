@@ -7,20 +7,33 @@ import styles from './ProductPurchaseSheet.module.css';
 
 /** Purchase-specific modal. A new mount starts a fresh draft on every opening. */
 export function ProductPurchaseSheet({ id, title, options, initialConfiguration, initialQuantity,
-  responsive, triggerRef, fallbackRef, onCancel, onConfirm }: Readonly<{
+  getTargetQuantity, responsive, triggerRef, fallbackRef, onCancel, onConfirm }: Readonly<{
   id: string;
   title: string;
   options: readonly ProductCardConfiguration[];
   initialConfiguration: ProductCardConfiguration;
   initialQuantity: number;
+  getTargetQuantity: (configuration: ProductCardConfiguration) => number;
   responsive: boolean;
   triggerRef: RefObject<HTMLButtonElement | null>;
   fallbackRef: RefObject<HTMLButtonElement | null>;
   onCancel: () => void;
-  onConfirm: (configuration: ProductCardConfiguration, quantity: number) => void;
+  onConfirm: (configuration: ProductCardConfiguration, quantity: number) => Promise<boolean>;
 }>) {
   const [configuration, setConfiguration] = useState(initialConfiguration);
   const [quantity, setQuantity] = useState(initialQuantity);
+  const confirming = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const confirm = async () => {
+    if (confirming.current || configuration.disabled) return;
+    confirming.current = true;
+    setPending(true);
+    setFailed(false);
+    try { setFailed(!await onConfirm(configuration, quantity)); }
+    catch { setFailed(true); }
+    finally { confirming.current = false; setPending(false); }
+  };
   const dialog = useRef<HTMLDialogElement>(null);
   const gesture = useRef<{ id: number; x: number; y: number } | null>(null);
   const suppressHandleClick = useRef(false);
@@ -103,22 +116,27 @@ export function ProductPurchaseSheet({ id, title, options, initialConfiguration,
           <p aria-live="polite"><span>{configuration.price.current}</span><small>/{configuration.label}</small></p>
         </div>
         <div className={styles.options} role="group" aria-label="Выберите вес">
-          {options.map(option => <button key={option.id} type="button" disabled={option.disabled}
+          {options.map(option => <button key={option.id} type="button" disabled={option.disabled || pending}
             aria-pressed={!option.disabled && configuration.id === option.id}
-            onClick={() => { if (!option.disabled) setConfiguration(option); }}>{option.label}</button>)}
+            onClick={() => {
+              if (option.disabled || option.id === configuration.id) return;
+              setConfiguration(option); setQuantity(getTargetQuantity(option)); setFailed(false);
+            }}>{option.label}</button>)}
         </div>
       </div>
       <div className={styles.actions}>
         <div className={styles.quantity} role="group" aria-label="Количество">
-          <button type="button" aria-label="Уменьшить количество" disabled={quantity === 1}
+          <button type="button" aria-label="Уменьшить количество" disabled={quantity === 1 || pending}
             onClick={() => setQuantity(value => Math.max(1, value - 1))}><span className={styles.minus} aria-hidden="true" /></button>
           <output aria-live="polite">{quantity}</output>
-          <button type="button" aria-label="Увеличить количество" onClick={() => setQuantity(value => value + 1)}>
+          <button type="button" aria-label="Увеличить количество" disabled={pending} onClick={() => setQuantity(value => value + 1)}>
             <span className={styles.plus} aria-hidden="true" />
           </button>
         </div>
-        <button className={styles.confirm} type="button" onClick={() => onConfirm(configuration, quantity)}>Добавить в корзину</button>
+        <button className={styles.confirm} type="button" disabled={pending} aria-busy={pending}
+          onClick={() => void confirm()}>Добавить в корзину</button>
       </div>
+      {failed && <p role="alert">Не удалось сохранить изменения. Повторите попытку.</p>}
     </dialog>, document.body,
   );
 }

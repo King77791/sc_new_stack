@@ -16,7 +16,7 @@ body {
   font-synthesis: none;
 }
 
-.app-content { flex: 1 0 auto; min-width: 0; }
+.app-content { flex: 1 0 auto; min-width: 0; isolation: isolate; }
 body > :first-child { flex-shrink: 0; }
 
 .page {

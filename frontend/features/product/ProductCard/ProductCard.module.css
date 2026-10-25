@@ -227,7 +227,7 @@
 .full .productImage { transform-origin: center; transition: transform 0.3s ease-in-out; }
 .full:focus-within .regionalBackground { visibility: visible; opacity: 0.15; }
 .full:focus-within .geography { visibility: visible; opacity: 1; transform: translateY(-8px); pointer-events: auto; }
-.full:focus-within .favorite { opacity: 1; pointer-events: auto; }
+.full:focus-within .favorite, .full .favorite[aria-pressed='true'] { opacity: 1; pointer-events: auto; }
 .full:focus-within .productImage { transform: scale(1.05); }
 .full:focus-within .cart:not(.cartAdded) { background: #2a403a; border-radius: 50%; }
 @media (hover: hover) and (pointer: fine) {
@@ -299,7 +299,14 @@
 .weightMenu [data-active='true'] { background: rgb(255 255 255 / 10%); opacity: 1; }
 .weightMenu [aria-disabled='true'] { opacity: .35; cursor: not-allowed; }
 .full .marquee > span { display: block; overflow: hidden; text-overflow: ellipsis; }
-.weight > img { transition: transform 0.2s ease-in-out; }
+.weightControl .weight { position: relative; }
+.weight > img {
+  position: absolute;
+  right: 8px;
+  inset-block: 0;
+  margin-block: auto;
+  transition: transform 0.2s ease-in-out;
+}
 .weight[aria-expanded='true'] > img { transform: rotate(180deg); }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .full .marquee[data-overflow='true']:hover { text-overflow: clip; }
@@ -435,7 +442,7 @@
 
 .responsive:focus-within .geography { visibility: visible; opacity: 1; transform: translateY(-8px); pointer-events: auto; }
 
-.responsive:focus-within .favorite { opacity: 1; pointer-events: auto; }
+.responsive:focus-within .favorite, .responsive .favorite[aria-pressed='true'] { opacity: 1; pointer-events: auto; }
 
 .responsive:focus-within .productImage { transform: scale(1.05); }
 

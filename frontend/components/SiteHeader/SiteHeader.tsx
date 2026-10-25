@@ -26,7 +26,7 @@ export function SiteHeader({ categories = headerCategories }: SiteHeaderProps) {
           <Link href={favoritesNavigation.href} className={`${styles.action} ${styles.upperFavorites}`} aria-label={favoritesNavigation.label}>
             <Image src={favoritesNavigation.icon} width={56} height={56} alt="" />
           </Link>
-          <Link href="/basket" className={styles.action} aria-label="Корзина">
+          <Link id="site-header-basket-link" href="/basket" className={styles.action} aria-label="Корзина">
             <Image src="/icons/basket_ic.svg" width={56} height={56} alt="" />
           </Link>
         </>}

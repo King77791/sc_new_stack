@@ -1,0 +1,14 @@
+.demo { padding: 40px 16px 64px; max-width: 1200px; margin-inline: auto; }
+.demo h1 { font-size: 28px; letter-spacing: normal; }
+.demo pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+.demo :is(button, input, select) { max-width: 100%; }
+.controls { display: flex; flex-wrap: wrap; gap: 16px; margin-block: 24px; }
+.controls :is(button, a) { min-height: 40px; padding: 8px; font: inherit; }
+.cards { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; }
+.cards > section { width: 360px; max-width: 100%; }
+.cards h2 { margin: 0 0 12px; font-size: 16px; }
+.scrollGuide { margin-top: 50vh; padding: 24px; border: 1px dashed currentColor; }
+@media (max-width: 1279px) {
+  .cards { column-gap: 3px; }
+  .cards > section { width: 170px; }
+}

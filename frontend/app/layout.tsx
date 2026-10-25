@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { SiteHeader } from '@/components/SiteHeader/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter/SiteFooter';
+import { CartApplicationProvider } from '@/features/cart/CartApplicationProvider';
+import { CartWidgetContainer } from '@/features/cart/CartWidgetContainer';
 import './globals.css';
 
 const ceraPro = localFont({
@@ -25,9 +27,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ru">
       <body className={ceraPro.variable}>
-        <SiteHeader />
-        <div className="app-content">{children}</div>
-        <SiteFooter />
+        <CartApplicationProvider>
+          <SiteHeader />
+          <div className="app-content">{children}</div>
+          <CartWidgetContainer unavailablePriceLabel="Цена недоступна" />
+          <SiteFooter />
+        </CartApplicationProvider>
       </body>
     </html>
   );

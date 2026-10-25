@@ -1,0 +1,11 @@
+.demo { max-width: 1200px; margin: 0 auto; padding: 260px 24px 48px; }
+.demo h1 { font-size: 28px; }
+.demo h2 { font-size: 22px; }
+.panel { min-width: 0; margin-top: 20px; padding: 20px; border: 1px solid #687064; border-radius: 8px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 16px; }
+.controls label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.demo :is(button, input, select) { max-width: 100%; min-height: 40px; padding: 8px; font: inherit; }
+.demo :is(button, a, input, select):focus-visible { outline: 2px solid #20211f; outline-offset: 3px; }
+.demo pre { overflow-wrap: anywhere; white-space: pre-wrap; font-size: 14px; }
+.demo li { overflow-wrap: anywhere; }
+@media (max-width: 599px) { .demo { padding: 180px 16px 32px; } }

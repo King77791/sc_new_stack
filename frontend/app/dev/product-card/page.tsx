@@ -21,8 +21,8 @@ export default async function ProductCardDemo({ searchParams }: { searchParams: 
   return (
     <main className={styles.demo}>
       <h1>ProductCard · Responsive + Bottom Sheet</h1>
-      <p>Временная dev-страница. Favorite, выбор веса и Cart используют только локальное UI-состояние.
-        Смена веса сбрасывает локальный Cart-счётчик; перезагрузка сбрасывает все изменения.
+      <p>Временная dev-страница. Favorite и выбор веса локальны; Cart общий для карточек этой страницы.
+        Смена веса показывает Cart quantity выбранной фасовки; перезагрузка сбрасывает все изменения.
         Страна ведёт на /catalog/region/&lt;country-slug&gt;; Catalog page пока не реализована.</p>
       <p>Проверка: hover карточки, hover/focus Mood, hover длинного title; Tab → вес → Enter → стрелки → Enter/Escape.
         В compact selectable CTA открывает Bottom Sheet; Escape отменяет draft.</p>

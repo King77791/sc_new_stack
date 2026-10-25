@@ -70,7 +70,7 @@ export function ProductCard({ data, presentation, favorite = false }: ProductCar
         )}
       </div>
 
-      <ProductCardPurchase data={{ title: data.title, price: data.price, purchasePresentation: data.purchasePresentation, weight: data.weight }} presentation={presentation}>
+      <ProductCardPurchase productKey={data.slug} data={{ slug: data.slug, title: data.title, price: data.price, purchasePresentation: data.purchasePresentation, weight: data.weight }} presentation={presentation}>
         <h3 className={styles.title}>
           <TitleMarquee href={productHref} title={data.title} />
         </h3>

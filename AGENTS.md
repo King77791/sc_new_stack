@@ -1473,6 +1473,9 @@ domain semantics.
 
 ### УТВЕРЖДЕНО: presentation requirements
 
+- Active Favorite остаётся видимым независимо от hover карточки. Inactive Favorite
+  сохраняет существующее hover/focus-revealed поведение full presentation;
+  compact Favorite остаётся постоянно доступным. ProductCard freeze сохраняется.
 - Product image присутствует всегда и имеет согласованное позиционирование
   внутри ProductCard согласно design system.
 - Mood использует модель раздела 8.7 и служит navigation/filter entry point.
@@ -1602,11 +1605,14 @@ weight/quantity states. Figma определяет визуальную геом
 Реализовано: `presentation="full" | "compact" | "responsive"`; первые два режима
 fixed, responsive переключается только CSS на 1280 px (ниже — compact). Одна
 server-first ProductCard содержит по одному title/image/Country/Mood subtree,
-Favorite island и ProductCardPurchase owner. Последний хранит current configuration
-и confirmed local quantity; новый mount ProductPurchaseSheet создаёт отдельный draft
-из current configuration и confirmed quantity > 0 ? quantity : 1. Confirm commit,
-Escape и переход responsive → full отменяют draft. Реальная inline смена
-configuration сбрасывает quantity. Fixed-weight Tea/Ceramics сохраняют прямой
+Favorite island и purchase UI owner. Cart — canonical source of truth для confirmed
+purchase quantity; локальное состояние карточки хранит selection, не confirmed quantity.
+Inline смена configuration меняет только selection. Bottom Sheet владеет только draft:
+при открытии и явном переключении target configuration загружается её Cart quantity,
+либо 1 при отсутствии строки. Внешние Cart updates не переписывают текущий draft.
+Confirm существующего target выполняет SET, отсутствующего — ADD; другие configurations
+не изменяются. Только successful Confirm фиксирует выбранный target; Cancel, Escape,
+swipe и переход responsive → full отбрасывают draft. Fixed-weight Tea/Ceramics сохраняют прямой
 compact action без Sheet и фиктивного selector; preorder исключён из Cart flow.
 
 Sheet использует native modal dialog с transparent backdrop, без backdrop click-dismiss.
@@ -2514,11 +2520,12 @@ Model (8) и Incremental Code Review (20).
 
 ## 24. CartWidget — утверждённый presentation / layer contract
 
-Статус: **CARTWIDGET POLISHING READY FOR FIX GATE**. Discovery и visual Manual Review утверждены;
-реализован изолированный presentation component и dev QA. Это не freeze и не
-production integration. Не создавать Cart store, не подключать widget в production
-root layout, не менять ProductCard/Header, не реализовывать Basket/Notification
-или ProductGrid без отдельного scope. Frozen features сохраняют свои ограничения,
+Статус: **CARTWIDGET PRESENTATION READY / FROZEN 🔒**. Discovery и visual Manual Review утверждены;
+Presentation подключена к canonical Cart через отдельный adapter/consumer в shared shell.
+Persistent Client Provider принимает server-composed children без дополнительного layout box;
+root layout остаётся Server Component. Текущий Cart in-memory frontend-only, без persistence
+и API; backend остаётся будущим источником commerce truth. Не реализовывать Header active
+indicator, Basket/Notification или ProductGrid без отдельного scope. Frozen features сохраняют свои ограничения,
 кроме явно разрешённой targeted Footer CSS integration delta ниже.
 
 ### 24.1. Presentation и state ownership
@@ -2540,6 +2547,11 @@ Presentation API: `items`, `onRemoveItem(itemId)`. Строка получает
 готовая итоговая цена ВСЕЙ строки с учётом quantity; configurationLabel описывает
 ОДНУ единицу и не умножается визуально на quantity. Frontend не рассчитывает line
 price, stock или availability. Формат selectable Tea labels следует 8.10.
+Одна canonical CartItem соответствует одной Widget position, включая позиции без готового quote.
+Если line pricing unavailable, adapter передаёт утверждённый текст «Цена недоступна»;
+не скрывать позицию, не подставлять zero/stale price и не рассчитывать сумму.
+Widget REMOVE меняет canonical Cart; ProductCard реагирует через тот же Cart state,
+без прямой связи компонентов или отдельного quantity state.
 Title — настоящий Next.js Link на `/product/${encodeURIComponent(slug)}` по существующему
 Product routing contract. Название отображается полностью с естественным переносом
 по словам: ellipsis, nowrap, line-clamp и обрезание title запрещены. Link и remove —
@@ -2571,8 +2583,9 @@ controls/typography. Basket navigation: link «Перейти в корзину�
 Named aside/region, настоящие count/chevron/remove buttons, aria-expanded и
 aria-controls; remove accessible name различает title и configuration. Никакого
 focus trap, dialog semantics или scroll lock. После remove фокус — на следующем
-remove, иначе предыдущем. После последней позиции final focus target остаётся
-integration boundary будущего Cart layer/Header: исчезнувшие controls не фокусировать.
+remove, иначе предыдущем. При удалении последней позиции из focused Widget remove
+фокус переходит на существующую Header basket link. Фоновое очищение Cart не
+перехватывает focus; исчезнувшие controls не фокусировать.
 Декоративная animation не обязательна; при добавлении уважать reduced motion.
 
 ### 24.3. Positioning и Footer integration
@@ -2596,8 +2609,8 @@ shell/родителей, Header, SiteFooter и существующие global 
 context; корень SiteFooter ранее не имел собственного z-index. Z-index вложенного
 footer nav не поднимал фон всего Footer. Для presentation QA выполнена минимальная
 targeted CSS-корректировка SiteFooter: z-index на существующем root flex item создаёт
-слой выше widget. Только dev content изолирован в нижнем context; production shell
-не подключён к CartWidget. При будущей shell integration сохранить весь порядок
+слой выше widget. В production shell page content изолирован ниже fixed Widget;
+Footer сохраняет существующий верхний слой без новых visual/CSS изменений. Сохранять весь порядок
 content/widget/Footer и отдельный Header layer. Это integration delta, не reopening
 или refactor Footer. Не менять markup, visual geometry, responsive behavior,
 typography, content, links или другие Footer styles; scroll logic запрещена.
@@ -2610,5 +2623,5 @@ Targeted browser QA при реализации: для non-empty Cart отде�
 expanded state прокрутить к Footer, проверить частичное и полное перекрытие
 соответствующей области widget, затем прокрутить обратно. Не допускаются скачок,
 reposition, преждевременное исчезновение или изменение `bottom: 1rem`, UI state
-и Cart state. Сценарий проверен в изолированном dev harness для обоих UI states;
-при production shell integration его необходимо повторить с настоящим Cart consumer.
+и Cart state. Сценарий проверен с настоящим Cart consumer в production shell
+для обоих UI states, включая частичное/полное перекрытие и возврат к content.
