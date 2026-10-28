@@ -55,6 +55,7 @@ async function clickText(text) {
   await evaluate(`(() => { const node = [...document.querySelectorAll('button')].find(node => node.textContent === ${q(text)}); if (!node || node.disabled) throw new Error('Unavailable: ' + ${q(text)}); node.click(); })()`);
 }
 async function cardClick(id, selector) {
+  await waitFor(`(() => {const node=[...${scope(id)}.querySelectorAll(${q(selector)})].find(${visible});return node && !node.disabled;})()`);
   await evaluate(`(() => { const node = [...${scope(id)}.querySelectorAll(${q(selector)})].find(${visible}); if (!node || node.disabled) throw new Error('Card control unavailable'); node.click(); })()`);
 }
 async function width(value) {
@@ -92,9 +93,30 @@ async function diagnostic(action, targetIndex, amount = 1) {
   await waitFor(`![...document.querySelectorAll('button')].find(node => node.textContent === 'ADD target').disabled`);
 }
 async function openSheet(id = 'a') {
+  // Empty CTA or confirmed purchase-management bag; quantity +/- are direct controls.
   await cardClick(id, 'button[aria-haspopup="dialog"]');
   await waitFor(`!!document.querySelector('dialog[open]')`);
   assert.equal(await evaluate(`document.querySelector('dialog').contains(document.activeElement)`), true);
+}
+
+// Fault/defer only the dev fixture's consumed Cart interface. No production API changes.
+async function interceptCartCommand(command, mode) {
+  await evaluate(`(() => {
+    const node = ${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]');
+    let fiber = node[Object.keys(node).find(key=>key.startsWith('__reactFiber$'))]; const carts=new Set();
+    while (fiber && !carts.size) { for(const version of [fiber,fiber.alternate])for (let dep=version?.dependencies?.firstContext;dep;dep=dep.next) {
+      if (typeof dep.memoizedValue?.getItem==='function') carts.add(dep.memoizedValue);
+    } fiber=fiber.return; }
+    if (!carts.size) throw Error('Dev Cart interface not found');
+    const originals=[...carts].map(cart=>({cart,original:cart[${q(command)}]}));
+    window.__quantityInjection={calls:0,restore:()=>{for(const {cart,original} of originals)cart[${q(command)}]=original;}};
+    for(const {cart,original} of originals)cart[${q(command)}]=(...args)=>{window.__quantityInjection.calls++;
+      return ${q(mode)}==='fail' ? Promise.resolve({ok:false,reason:'not-found'})
+        : new Promise(resolve=>{window.__quantityInjection.release=()=>original(...args).then(resolve);});};
+  })()`);
+}
+async function restoreCartCommand() {
+  await evaluate('window.__quantityInjection.restore(); delete window.__quantityInjection');
 }
 async function sheetSelect(label) {
   await evaluate(`(() => { const node = [...document.querySelectorAll('dialog [aria-label="Выберите вес"] button')].find(node => node.textContent === ${q(label)}); node.click(); })()`);
@@ -214,6 +236,7 @@ try {
   await reset();
   for (const id of ['pressed', 'ceramics']) {
     await cardClick(id, 'button[aria-label^="В корзину"]'); await cardQuantity(id, 1);
+    assert.equal(await evaluate(`!!${scope(id)}.querySelector('button[aria-haspopup="dialog"]')`),false);
     await cardClick(id, 'button[aria-label="Увеличить количество"]'); await cardQuantity(id, 2);
     await cardClick(id, 'button[aria-label="Уменьшить количество"]'); await cardQuantity(id, 1);
     await cardClick(id, 'button[aria-label="Уменьшить количество"]'); await cardQuantity(id, 0);
@@ -230,6 +253,69 @@ try {
   await cardClick('ceramics', 'button[aria-label="Уменьшить количество"]'); await cardQuantity('ceramics', 2);
   await clickSelector('input[type="checkbox"]');
   console.log('PASS FIXED-1..FIXED-5 and fixed ADD/SET failures');
+
+  for (const viewport of [375,414]) {
+    await reset(); await width(viewport); await diagnostic('ADD',0,1); await diagnostic('ADD',1,2);
+    await openSheet(); await sheetSelect('100 г.'); await confirm(); await cardQuantity('a',2);
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',1);
+    assert.equal(await evaluate('!!document.querySelector("dialog")'),false);
+    assert.equal(await cartQuantity(),1); assert.equal(await cartQuantity('tea-100'),1);
+    await cardClick('a','button[aria-label="Увеличить количество"]'); await cardQuantity('a',2);
+    assert.equal(await cartQuantity(),1); assert.equal(await cartQuantity('tea-100'),2);
+    const controls=await evaluate(`(() => {const root=${scope('a')},b=root.querySelector('button[aria-label^="Выбрать фасовку"]'),r=b.getBoundingClientRect(),p=b.parentElement.getBoundingClientRect(),i=b.querySelector('img').getBoundingClientRect();return {size:[r.width,r.height],gap:getComputedStyle(b.parentElement).columnGap,background:getComputedStyle(b).backgroundColor,iconCentered:Math.abs(i.left+i.width/2-r.left-r.width/2)<.1&&Math.abs(i.top+i.height/2-r.top-r.height/2)<.1,inside:p.left>=root.getBoundingClientRect().left&&p.right<=root.getBoundingClientRect().right,stepper:[...root.querySelectorAll('[role="group"][aria-label^="Количество:"] button')].every(n=>!n.hasAttribute('aria-haspopup')&&!n.hasAttribute('aria-controls')),bag:b.getAttribute('aria-haspopup')};})()`);
+    assert.deepEqual(controls.size,[32,32]); assert.equal(controls.gap,'8px'); assert.ok(controls.iconCentered&&controls.inside&&controls.stepper); assert.equal(controls.bag,'dialog'); assert.equal(controls.background,'rgba(255, 255, 255, 0.15)');
+    await evaluate(`${scope('a')}.scrollIntoView({block:'center'})`); await screenshot(`unified-controls-${viewport}`);
+    await evaluate(`${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]').focus()`);
+    assert.equal(await evaluate(`getComputedStyle(${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]')).outlineStyle`),'solid');
+    await openSheet(); assert.equal(await draft(),2); await dismiss();
+    await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]')`);
+    await openSheet(); await key('Escape'); await waitFor('!document.querySelector("dialog")');
+    await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]')`);
+    await cardClick('b','button[aria-label="Уменьшить количество"]'); await cardQuantity('b',0);
+    assert.equal(await cartQuantity(),0); assert.equal(await cartQuantity('tea-100'),2);
+    assert.ok(await evaluate(`${scope('b')}.textContent.includes('50 г.')`));
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',1);
+    await evaluate(`${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]').focus()`);
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',0);
+    assert.deepEqual(await items(),[]);
+    await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-haspopup="dialog"]')`);
+    await openSheet(); await sheetSelect('200 г.'); await draftTo(2); await confirm(); await cardQuantity('a',2);
+    assert.equal(await cartQuantity('tea-200'),2); assert.equal(await cartQuantity('tea-100'),0);
+    await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]')`);
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,JSON.stringify(await evaluate(`({viewport:innerWidth,scroll:document.documentElement.scrollWidth,x:scrollX,body:document.body.getBoundingClientRect().toJSON(),offenders:[...document.querySelectorAll('body *')].filter(n=>n.scrollWidth>innerWidth).slice(0,12).map(n=>({tag:n.tagName,class:n.className,scroll:n.scrollWidth,right:n.getBoundingClientRect().right,width:n.getBoundingClientRect().width,overflow:getComputedStyle(n).overflow,phase:n.dataset.phase}))})`)));
+    console.log(`PASS unified compact ${viewport}: direct +/-/REMOVE, isolation, no auto-selection, bag geometry/semantics, Sheet ADD/SET and focus`);
+  }
+
+  await reset(); await width(375); await diagnostic('ADD',0,1); await diagnostic('ADD',1,2);
+  await openSheet(); await sheetSelect('100 г.'); await confirm();
+  const beforeFailure=await items();
+  await clickSelector('input[type="checkbox"]');
+  for (const name of ['Уменьшить количество','Увеличить количество']) {
+    await cardClick('a',`button[aria-label="${name}"]`); await cardQuantity('a',2);
+    assert.deepEqual(await items(),beforeFailure); assert.equal(await evaluate('!!document.querySelector("dialog")'),false);
+  }
+  await clickSelector('input[type="checkbox"]'); await diagnostic('SET',1,1);
+  await interceptCartCommand('removeItem','fail'); const beforeRemoveFailure=await items();
+  await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',1);
+  assert.equal(await evaluate('window.__quantityInjection.calls'),1);
+  assert.deepEqual(await items(),beforeRemoveFailure); assert.equal(await evaluate('!!document.querySelector("dialog")'),false);
+  await restoreCartCommand();
+  for (const [start,name,expected] of [[2,'Уменьшить количество',1],[1,'Увеличить количество',2]]) {
+    await diagnostic('SET',1,start); await interceptCartCommand('setItemQuantity','defer');
+    await evaluate(`(() => {const root=${scope('a')},b=root.querySelector('button[aria-label="${name}"]');b.click();b.click();root.querySelector('button[aria-label^="Выбрать фасовку"]').click();})()`);
+    await waitFor(`${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]').disabled`);
+    assert.equal(await evaluate('window.__quantityInjection.calls'),1); assert.equal(await evaluate('!!document.querySelector("dialog")'),false);
+    assert.equal(await cartQuantity('tea-100'),start);
+    await evaluate('window.__quantityInjection.release()'); await cardQuantity('a',expected); await restoreCartCommand();
+  }
+  await cardClick('a','button[aria-label="Увеличить количество"]'); await cardQuantity('a',3);
+  await evaluate(`(() => {const b=${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]');window.__oldQuantityClick=b[Object.keys(b).find(k=>k.startsWith('__reactProps$'))].onClick;})()`);
+  await diagnostic('REMOVE',1); const withoutTarget=await items();
+  await evaluate('window.__oldQuantityClick(); delete window.__oldQuantityClick');
+  assert.deepEqual(await items(),withoutTarget); assert.equal(await evaluate('!!document.querySelector("dialog")'),false);
+  console.log('PASS direct failures, REMOVE failure, pending bag guard, rapid +/- single-flight, successive increments and vanished target no-op');
+  assert.equal(await evaluate(`!!${scope('preorder')}.querySelector('button[aria-label="Уменьшить количество"],button[aria-label="Увеличить количество"],button[aria-label^="Выбрать фасовку"]')`),false);
 
   await reset(); await diagnostic('ADD', 0, 2);
   await clickText('External ADD 50 in 3 seconds'); await openSheet();

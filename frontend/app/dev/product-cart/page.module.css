@@ -1,6 +1,7 @@
 .demo { margin: 0 auto; max-width: 1200px; padding: 40px 16px 64px; color: white; background: #1e3932; }
 .demo h1 { font-size: 28px; font-weight: 500; }
 .demo > p { max-width: 720px; line-height: 1.5; }
+.demo pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-block: 16px; }
 .controls button { min-height: 40px; font: inherit; }
 .cards { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; }

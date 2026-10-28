@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { siteContacts } from '@/lib/site-data';
 import { HeaderBehavior } from './HeaderBehavior';
+import { CartIndicator } from './CartIndicator';
 import { favoritesNavigation, headerCategories, type HeaderCategory } from './header-data';
 import styles from './SiteHeader.module.css';
 
@@ -27,7 +28,10 @@ export function SiteHeader({ categories = headerCategories }: SiteHeaderProps) {
             <Image src={favoritesNavigation.icon} width={56} height={56} alt="" />
           </Link>
           <Link id="site-header-basket-link" href="/basket" className={styles.action} aria-label="Корзина">
-            <Image src="/icons/basket_ic.svg" width={56} height={56} alt="" />
+            <span className={styles.cartIcon}>
+              <Image src="/icons/basket_ic.svg" width={56} height={56} alt="" />
+              <CartIndicator />
+            </span>
           </Link>
         </>}
       />

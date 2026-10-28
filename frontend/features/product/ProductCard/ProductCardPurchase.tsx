@@ -113,7 +113,7 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
     quantityAction.current = null;
   }, [quantity, pending]);
   const openSheet = (event: { currentTarget: HTMLButtonElement }) => {
-    if (cart && options && selected && !preorder) { sheetSession.current += 1; trigger.current = event.currentTarget; setSheetOpen(true); }
+    if (!mutationPending.current && cart && options && selected && !preorder) { sheetSession.current += 1; trigger.current = event.currentTarget; setSheetOpen(true); }
   };
   const closeSheet = () => { sheetSession.current += 1; setSheetOpen(false); };
   const changeInline = (option: ProductCardConfiguration) => {
@@ -149,13 +149,13 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
     if (!cart || !configuration || preorder) return;
     return mutate(() => reportAdd(cart.addItem({ productKey, configuration, quantity: 1, presentation: snapshot(selected) })), focus);
   };
-  const decrementFixed = () => {
-    if (!cart || !configuration || options || preorder) return;
+  const changeQuantity = (delta: -1 | 1) => {
+    if (!cart || !configuration || preorder || mutationPending.current) return;
     const item = cart.getItem(productKey, configuration);
     if (!item) return;
-    return item.quantity === 1
+    return delta === -1 && item.quantity === 1
       ? mutate(() => cart.removeItem(item.id), 'remove')
-      : mutate(() => cart.setItemQuantity(item.id, item.quantity - 1));
+      : mutate(() => cart.setItemQuantity(item.id, item.quantity + delta));
   };
   return (
     <>
@@ -191,20 +191,26 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
           </span> : <span className={styles.cartIcon}><Image src="/icons/product/cart.svg" alt="" width={25} height={31} /></span>}
           <span className={styles.srOnly} role="status">{quantity > 0 ? `В корзине: ${quantity}` : ''}</span>
         </button>
-        {quantity > 0 ? <div className={`${styles.quantityBar} ${styles.compactOnly}`} role="group" aria-label={`Количество: ${data.title}`}>
-          <button ref={options ? trigger : undefined} type="button"
-            disabled={pending}
-            aria-label={options ? `Открыть управление товаром и количеством: ${data.title}` : 'Уменьшить количество'}
-            aria-haspopup={options ? 'dialog' : undefined} aria-controls={sheetOpen ? sheetId : undefined}
-            onClick={options ? openSheet : () => void decrementFixed()}><Image src="/icons/product/quantity-minus.svg" alt="" width={14} height={2} /></button>
-          <span role="status">{quantity}</span>
-          <button ref={compactPlus} type="button"
-            disabled={pending}
-            aria-label={options ? `Открыть управление товаром и количеством: ${data.title}` : 'Увеличить количество'}
-            aria-haspopup={options ? 'dialog' : undefined} aria-controls={sheetOpen ? sheetId : undefined}
-            onClick={options ? openSheet : () => void add()}>
-            <Image src="/icons/product/quantity-plus.svg" alt="" width={12} height={12} />
-          </button>
+        {quantity > 0 ? <div className={`${styles.purchaseControls} ${styles.compactOnly}`}>
+          <div className={styles.quantityBar} role="group" aria-label={`Количество: ${data.title}`}>
+            <button type="button"
+              disabled={pending}
+              aria-label="Уменьшить количество"
+              onClick={() => void changeQuantity(-1)}><Image src="/icons/product/quantity-minus.svg" alt="" width={14} height={2} /></button>
+            <span role="status">{quantity}</span>
+            <button ref={compactPlus} type="button"
+              disabled={pending}
+              aria-label="Увеличить количество"
+              onClick={() => void changeQuantity(1)}>
+              <Image src="/icons/product/quantity-plus.svg" alt="" width={12} height={12} />
+            </button>
+          </div>
+          {options && <button ref={trigger} type="button" className={styles.purchaseManagement}
+            disabled={pending} aria-label={`Выбрать фасовку: ${data.title}`}
+            aria-haspopup="dialog" aria-controls={sheetOpen ? sheetId : undefined}
+            onClick={openSheet}>
+            <Image src="/icons/product/cart.svg" alt="" width={25} height={31} />
+          </button>}
         </div> : <button ref={trigger} type="button" className={`${styles.cart} ${styles.compactOnly}`}
           disabled={!cart || pending || Boolean(options && !selected)}
           aria-label={`${options ? 'Добавить в корзину' : 'В корзину'}: ${data.title}`}

@@ -86,14 +86,41 @@ async function waitHydrated() {
   await waitFor(`(() => { const node = ${scope('a')}?.querySelector('button[aria-haspopup="listbox"]'); return node && Object.keys(node).some(key => key.startsWith('__reactProps$')); })()`);
 }
 const widgetRect = () => evaluate(`(() => { const r = ${widget}.getBoundingClientRect(); return [r.x, r.y, r.width, r.height]; })()`);
+const indicator = () => evaluate(`!!document.querySelector('#site-header-basket-link [data-cart-indicator]')`);
+const headerGeometry = () => evaluate(`['header','[data-primary-bar]','#site-header-basket-link','#site-header-basket-link img','[data-burger]','header a[href="/"]'].map(selector=>{const r=document.querySelector(selector).getBoundingClientRect();return [r.x,r.y,r.width,r.height];})`);
 
 try {
   await send('Runtime.enable'); await send('Page.enable'); await width(1440);
   await send('Page.navigate', { url: `${base}/dev/cart-widget-integration` }); await waitHydrated();
   assert.equal(await evaluate(`!!${widget}`), false);
+  assert.equal(await indicator(), false);
+  const emptyHeaders = new Map();
+  for (const viewport of [375,414,1280,1440,1920]) {
+    await width(viewport); emptyHeaders.set(viewport,await headerGeometry()); assert.equal(await indicator(),false);
+  }
+  await width(1440);
   const shellGeometry = () => evaluate(`['header', 'footer', '[data-card="a"] article'].map(selector => { const r = document.querySelector(selector).getBoundingClientRect(); return selector === 'footer' ? [r.width, r.height] : [r.x, r.y + scrollY, r.width, r.height]; })`);
   const emptyGeometry = await shellGeometry();
   await add('a'); await cardQuantity('a', 1); await cardQuantity('b', 1);
+  assert.equal(await indicator(), true);
+  for (const viewport of [375,414,1280,1440,1920]) {
+    await width(viewport); assert.deepEqual(await headerGeometry(),emptyHeaders.get(viewport),'Header must not shift');
+    const dot = await evaluate(`(() => {const link=document.querySelector('#site-header-basket-link'),n=link.querySelector('[data-cart-indicator]'),d=n.getBoundingClientRect(),i=link.querySelector('img').getBoundingClientRect();return {diameter:d.width,height:d.height,x:d.left-i.left,y:d.top-i.top,iconWidth:i.width,color:getComputedStyle(n).backgroundColor,pointer:getComputedStyle(n).pointerEvents,hidden:n.getAttribute('aria-hidden'),tab:n.tabIndex,label:link.getAttribute('aria-label'),overflow:document.documentElement.scrollWidth>innerWidth};})()`);
+    assert.ok(Math.abs(dot.diameter-dot.iconWidth*8/56)<0.03); assert.ok(Math.abs(dot.height-dot.diameter)<0.03);
+    assert.ok(Math.abs(dot.x-dot.iconWidth*33/56)<0.03); assert.ok(Math.abs(dot.y-dot.iconWidth*30/56)<0.03);
+    assert.equal(dot.color,'rgb(255, 153, 0)'); assert.equal(dot.pointer,'none'); assert.equal(dot.hidden,'true'); assert.equal(dot.tab,-1); assert.equal(dot.label,'Корзина'); assert.equal(dot.overflow,false);
+    if (viewport < 1280) {
+      await evaluate(`document.querySelector('[data-burger]').click()`); await frames();
+      assert.equal(await evaluate(`document.querySelector('header').dataset.panel`),'mobile'); assert.equal(await indicator(),true);
+      await evaluate(`document.querySelector('[data-burger]').click()`); await frames();
+    }
+    await evaluate(`document.querySelector('header button[aria-label="Поиск"]').click()`); await frames();
+    assert.equal(await evaluate(`document.activeElement.getAttribute('aria-label')`),'Поиск по сайту'); assert.equal(await indicator(),true);
+    await evaluate(`document.querySelector('header button[aria-label="Закрыть поиск"]').click()`); await frames();
+    assert.deepEqual(await headerGeometry(),emptyHeaders.get(viewport));
+    console.log(`PASS Header indicator ${viewport}: empty/non-empty, scaled Figma geometry, no shift`,dot);
+  }
+  await width(1440);
   assert.equal(await expanded(), false);
   assert.match(await evaluate(`${widget}.textContent`), /1 позиция/);
   assert.equal((await rows())[0].price, '1 030 ₽');
@@ -101,10 +128,12 @@ try {
   console.log('PASS E2E-1 / PRICE-1: first ADD, collapsed Widget, exact line quote, no shell shift');
 
   await add('a'); await cardQuantity('a', 2);
+  assert.equal(await indicator(),true);
   assert.equal((await rows()).length, 1); assert.equal((await rows())[0].quantity, 2);
   assert.equal((await rows())[0].price, '2 060 ₽');
   await fullSelect('a', '100 г.'); await cardQuantity('a', 0); await add('a');
   assert.equal((await rows()).length, 2);
+  assert.equal(await indicator(),true);
   assert.deepEqual((await rows()).map(row => row.price), ['2 060 ₽', '1 980 ₽']);
   assert.ok((await rows())[0].label.includes('50 г.'));
   assert.ok((await rows())[1].label.includes('100 г.'));
@@ -118,12 +147,14 @@ try {
   await fullSelect('a', '50 г.');
   await evaluate(`window.__nextWidgetRemove = ${widget}.querySelectorAll('li button')[1]; undefined`);
   await remove(0); await cardQuantity('a', 0); await cardQuantity('b', 0);
+  assert.equal(await indicator(),true);
   assert.equal(await expanded(), true); assert.equal((await rows()).length, 1);
   assert.equal(await evaluate('document.activeElement === window.__nextWidgetRemove'), true);
   await fullSelect('a', '100 г.'); await cardQuantity('a', 1);
   console.log('PASS E2E-4 / E2E-5: selectors, Widget REMOVE updates both cards, next-remove focus');
 
   await remove(0); await waitFor(`!${widget}`); await cardQuantity('a', 0);
+  assert.equal(await indicator(),false);
   await waitFor(`document.activeElement.id === 'site-header-basket-link'`);
   await fullSelect('a', '50 г.'); await add('a');
   assert.equal(await expanded(), false);
@@ -141,6 +172,8 @@ try {
   console.log('PASS E2E-7 / PRICE-3: fixed products and honest unavailable price without stale total');
 
   await width(375);
+  await cardClick('pressed','button[aria-label="Уменьшить количество"]');
+  assert.equal(await indicator(),true);
   assert.equal(await evaluate(`getComputedStyle(${widget}).display`), 'none');
   await cardClick('a', 'button[aria-haspopup="dialog"]');
   await waitFor(`!!document.querySelector('dialog[open]')`);
@@ -165,7 +198,8 @@ try {
   await evaluate(`document.querySelector('a[href="/dev/cart-widget-integration"]').click()`); await waitHydrated();
   await send('Page.reload'); await waitHydrated();
   assert.deepEqual(await items(), []); assert.equal(await evaluate(`!!${widget}`), false);
-  console.log('PASS E2E-9 / E2E-10: persistent Provider and Widget node across navigation, reload reset');
+  assert.equal(await indicator(),false);
+  console.log('PASS E2E-9 / E2E-10: persistent Provider and Widget node across navigation, reload reset; Header indicator absent');
 
   await clickText('ADD 21 diagnostic positions');
   await waitFor(`${widget}?.querySelectorAll('li').length === 21`);
@@ -208,6 +242,7 @@ try {
 
   await evaluate(`const input = document.querySelector('input[inputmode="decimal"]'); input.focus(); window.__backgroundFocus = input; undefined`);
   await clickText('Remove all (diagnostic)'); await waitFor(`!${widget}`);
+  assert.equal(await indicator(),false);
   assert.equal(await evaluate('document.activeElement === window.__backgroundFocus'), true);
   assert.deepEqual(problems, []);
   console.log('PASS integration surface: exceptions/warnings/errors = 0; background clearing does not steal focus');

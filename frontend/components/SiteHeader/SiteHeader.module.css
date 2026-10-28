@@ -59,6 +59,9 @@
 .actions { display: flex; justify-content: flex-end; gap: 15px; min-width: 0; }
 .action { display: grid; place-items: center; padding: 0; width: 56px; height: 56px; flex: 0 0 auto; }
 .action img { display: block; }
+.cartIcon { position: relative; display: block; width: max-content; }
+/* Figma 145:45411: 8px at (33, 30), 1.8px OUTSIDE stroke; SCALE constraints. */
+.cartIndicator { position: absolute; left: 58.928571%; top: 53.571429%; width: 14.285714%; height: 14.285714%; border-radius: 50%; background: #ff9900; box-shadow: 0 0 0 1.8px var(--color-header-green); pointer-events: none; }
 .burger { display: none; }
 .navigationRoot {
   position: absolute;

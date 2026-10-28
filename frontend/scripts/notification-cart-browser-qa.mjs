@@ -109,22 +109,49 @@ try {
   }, 'fixed decrement/remove');
   await cardClick('ceramics', 'button[aria-label^="В корзину"]'); await idle();
   await cardClick('ceramics', 'button[aria-label="Увеличить количество"]'); await idle();
-  assert.equal(await count(), 7);
+  assert.equal(await count(), 6); // Compact fixed + is a quantity SET, not an ADD notification.
   await noEvent(async () => cardClick('ceramics', 'button[aria-label="Уменьшить количество"]'), 'fixed decrement SET');
   await noEvent(async () => cardClick('ceramics', 'button[aria-label="Добавить в избранное"]'), 'local Favorite toggle');
   console.log('Compact new-target ADD / existing-target SET / fixed plus PASS');
 
-  await cardClick('ceramics', 'button[aria-label="Увеличить количество"]');
+  await cardClick('pressed', 'button[aria-label^="В корзину"]');
   await sheet(); await wait(`document.querySelector(${q(shell)})?.dataset.phase==='resting'`);
   assert.ok(await evaluate(`(() => {const r=document.querySelector(${q(shell)}).getBoundingClientRect();return !document.elementFromPoint(r.left+10,r.top+10).closest('[data-notification-id]');})()`));
   await idle(); await evaluate(`document.querySelector('dialog button[aria-label="Закрыть панель"]').click()`);
+  await width(1280); await fullAdd('ceramics'); await width(375);
   await evaluate(`document.querySelector('[data-burger]').click()`);
   await wait(`document.querySelector('header').dataset.panel==='mobile'`);
-  await cardClick('ceramics', 'button[aria-label="Увеличить количество"]');
   await wait(`document.querySelector(${q(shell)})?.dataset.phase==='resting'`);
   assert.ok(await evaluate(`(() => {const n=document.querySelector(${q(shell)}),r=n.getBoundingClientRect();return document.elementFromPoint(r.left+10,r.top+10).closest('[data-notification-id]')===n;})()`));
   await idle(); await evaluate(`document.querySelector('[data-burger]').click()`);
   console.log('Above Header menu / below native modal top layer PASS');
+
+  // New compact stepper uses SET/REMOVE only; bag retains the actual ADD boundary.
+  await evaluate(`[...document.querySelectorAll('button')].find(n=>n.textContent==='Remove all (diagnostic)').click()`);
+  await wait(`document.querySelector('[data-testid="items"]').textContent==='[]'`); await idle();
+  const beforeDirect=await count();
+  await sheet(); await confirm(); await idle();
+  await sheet();
+  await evaluate(`[...document.querySelectorAll('dialog [aria-label="Выберите вес"] button')].find(n=>n.textContent==='100 г.').click()`);
+  await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`);
+  await confirm(); await idle(); assert.equal(await count(),beforeDirect+2);
+  const quantities=()=>evaluate(`JSON.parse(document.querySelector('[data-testid="items"]').textContent).map(n=>[n.presentation.configurationLabel,n.quantity])`);
+  assert.deepEqual(await quantities(),[['50 г.',1],['100 г.',2]]);
+  await noEvent(()=>cardClick('a','button[aria-label="Уменьшить количество"]'),'selectable direct minus');
+  assert.deepEqual(await quantities(),[['50 г.',1],['100 г.',1]]);
+  await noEvent(()=>cardClick('a','button[aria-label="Увеличить количество"]'),'selectable direct plus');
+  assert.deepEqual(await quantities(),[['50 г.',1],['100 г.',2]]);
+  await noEvent(()=>cardClick('b','button[aria-label="Уменьшить количество"]'),'REMOVE only selected 50g');
+  assert.deepEqual(await quantities(),[['100 г.',2]]);
+  assert.equal(await evaluate(`!!document.querySelector('[data-cart-indicator]')`),true);
+  await noEvent(()=>cardClick('a','button[aria-label="Уменьшить количество"]'),'selectable decrement to one');
+  await evaluate(`document.querySelector('[data-card="a"] button[aria-label="Уменьшить количество"]').focus()`);
+  await noEvent(()=>cardClick('a','button[aria-label="Уменьшить количество"]'),'REMOVE last global CartItem');
+  assert.deepEqual(await quantities(),[]);
+  assert.equal(await evaluate(`!!document.querySelector('[data-cart-indicator]')`),false);
+  assert.equal(await evaluate(`!!document.querySelector('aside')`),false);
+  await wait(`document.activeElement===document.querySelector('[data-card="a"] button[aria-haspopup="dialog"]')`);
+  console.log('Unified compact root Cart: isolated +/-/REMOVE, bag ADD notifications, last REMOVE clears Header dot, focus CTA PASS');
 
   // Footer cannot cover transient feedback. Existing widget remains behind Footer.
   await width(1280); await evaluate('window.scrollTo(0,document.documentElement.scrollHeight)');

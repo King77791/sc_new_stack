@@ -1621,8 +1621,18 @@ Pointer Events swipe вниз: минимум 64 px и вертикальное 
 mouse drag не включён. Незавершённый/горизонтальный жест не закрывает панель.
 Weight slots из 8.10 равномерно заполняют ширину с gap 7 px;
 title занимает остаток ширины рядом с ограниченной price/reference-weight group.
-В confirmed compact selectable карточке обе кнопки −/+ открывают Sheet без изменения
-quantity; число неинтерактивно. Для non-configurable товаров прямые actions сохраняются.
+В confirmed compact selectable карточке управление current CartItem отделено от
+управления Purchase Configurations Product. −/+ напрямую изменяют quantity только
+current selected configuration и никогда не открывают Sheet. При quantity=1 минус
+выполняет REMOVE, не SET 0. Отдельная purchase-management button с существующей
+shopping-bag semantics открывает ProductPurchaseSheet; empty selected state сохраняет CTA.
+Displayed quantity относится к selected configuration, не aggregate Product quantity.
+REMOVE не auto-select другую configuration: если другие CartItems остаются, selected
+configuration сохраняется, а её карточка возвращается к CTA. Все confirmed quantities
+получаются из canonical Cart; target перечитывается при действии, исчезнувший target
+не заменяется другой configuration. Increment/decrement/REMOVE не создают Notification;
+successful ADD через CTA/Sheet сохраняет существующий feedback contract. Для fixed/direct
+товаров прямой stepper сохраняется без purchase-management button; preorder не меняется.
 Scroll lock действует только при открытии; matchMedia listener
 существует только у открытой responsive Sheet для cleanup на full. Focus возвращается
 на видимый compact trigger, при его скрытии — на full Cart action этой карточки.
@@ -2659,8 +2669,8 @@ Footer и Header. Native/modal browser top layer сохраняет отдель
 EXIT поверх CartWidget допустимо; Footer не перекрывает Notification.
 
 Cart dispatch происходит только после successful addItem result: desktop ADD,
-repeated ADD, fixed ADD/compact plus и Sheet Confirm для отсутствующего target.
-Existing-target SET, decrement, REMOVE, cancel и failed ADD не создают cart.added.
+repeated ADD, initial fixed ADD и Sheet Confirm для отсутствующего target.
+Existing-item increment, SET, decrement, REMOVE, cancel и failed ADD не создают cart.added.
 Недоступная цена сама по себе не отменяет successful mutation. Dispatch связан
 с результатом ADD command, а не с закрытием Sheet; существующий session guard сохраняется.
 Cart domain остаётся UI-agnostic и не содержит Notification knowledge.
@@ -2671,3 +2681,19 @@ Cart message: «Товар добавлен в корзину». Favorite semant
 не считать подтверждённым сохранением. Future interactive variants требуют
 отдельного lifetime/dismiss/accessibility решения; не наследуют автоматически
 короткий success timer. Success использует polite status announcement без focus steal.
+
+## 26. Header Cart Indicator — approved narrow integration
+
+Статус: **HEADER CART INDICATOR READY / FROZEN 🔒**.
+Header сохраняет статус **HEADER READY / FROZEN 🔒** после этого узкого integration delta.
+
+Indicator — binary EMPTY / NOT EMPTY, derived только из canonical Cart.hasItems.
+Он не показывает count, quantity или price и автоматически исчезает, когда Cart пуст,
+независимо от причины очистки. Будущий successful Checkout не требует Header-specific
+логики, если он корректно очищает canonical Cart; отдельный clearCart ради indicator не вводится.
+Не связывать indicator с Notification events, ProductCard local state или CartWidget.
+Это декоративное состояние существующей Cart navigation, без отдельного control,
+tab stop или live announcement. Header layout, routing и interaction contract сохраняются.
+
+Favorite Indicator deferred until canonical Favorite Domain exists.
+Local FavoriteButton state не является источником Header Favorite Indicator.
