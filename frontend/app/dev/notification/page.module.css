@@ -1,0 +1,10 @@
+.demo { padding: 190px 24px 120px; min-height: 110vh; background: linear-gradient(125deg, #1e3932, #002021 50%, #446655); color: white; }
+.demo h1 { font-size: 32px; letter-spacing: normal; }
+.demo p { max-width: 760px; line-height: 1.6; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 24px; }
+.controls button, .previewActions button { font: inherit; border: 1px solid #eabc6f; border-radius: 8px; padding: 12px; background: #002021; color: white; cursor: pointer; }
+.demo a { color: #eabc6f; }
+.previewActions { display: flex; gap: 16px; align-items: center; margin-top: 12px; }
+.previewActions a { color: #eabc6f; }
+.previewActions :focus-visible { outline: 2px solid #eabc6f; outline-offset: 3px; }
+@media (max-width: 767px) { .demo { padding-top: 150px; } }

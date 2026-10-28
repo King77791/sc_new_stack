@@ -2625,3 +2625,49 @@ expanded state прокрутить к Footer, проверить частичн
 reposition, преждевременное исчезновение или изменение `bottom: 1rem`, UI state
 и Cart state. Сценарий проверен с настоящим Cart consumer в production shell
 для обоих UI states, включая частичное/полное перекрытие и возврат к content.
+
+## 25. Notification v1 — application-level contract
+
+Статус: **NOTIFICATION V1 READY / FROZEN 🔒**. Implementation, Manual Review
+и финальный fix gate завершены успешно.
+
+Notification — application-level event-driven transient UI. Не выводить появление
+из Cart items/hasItems, Favorite boolean или другого persistent state. Business caller
+передаёт typed semantic event; текст и содержимое принадлежат presentation mapping.
+Provider/dispatcher, очередь и host не принадлежат ProductCard, CartWidget,
+Header/Footer, BottomSheet или FavoriteButton. RootLayout остаётся Server Component.
+
+V1: один active occurrence и FIFO без stacking, replacement, dedupe, collapse
+или silent event loss. Каждый successful ADD, включая повторный одинаковый,
+создаёт отдельный occurrence. Следующий начинает движение после EXIT предыдущего,
+без дополнительного legacy delayed interval. Notification не блокирует работу пользователя.
+
+Утверждён historical motion cycle 2.5s: ENTER 625ms → REST 1250ms → EXIT 625ms,
+ease-in-out, направление left → viewport center → right. Старое предложение
+4-second REST отменено. REST отсчитывается после ENTER; hover и focus-within
+приостанавливают активное REST-время, resume продолжает остаток. При нескольких
+причинах паузы resume происходит только после снятия всех причин.
+Reduced motion исключает горизонтальный пролёт: сразу REST 1250ms active time,
+затем removal; FIFO и announcement сохраняются.
+
+Intrinsic shell, natural wrapping и viewport-safe width; bottom 2.5rem с safe-area
+при необходимости. Все четыре угла 20px — product override asymmetric Figma fragment.
+Текущий success не имеет icon, close button или click-to-dismiss.
+Notification — самый верхний обычный application layer, выше content, CartWidget,
+Footer и Header. Native/modal browser top layer сохраняет отдельный приоритет.
+Не двигать Widget/Notification и не добавлять collision/scroll observers: прохождение
+EXIT поверх CartWidget допустимо; Footer не перекрывает Notification.
+
+Cart dispatch происходит только после successful addItem result: desktop ADD,
+repeated ADD, fixed ADD/compact plus и Sheet Confirm для отсутствующего target.
+Existing-target SET, decrement, REMOVE, cancel и failed ADD не создают cart.added.
+Недоступная цена сама по себе не отменяет successful mutation. Dispatch связан
+с результатом ADD command, а не с закрытием Sheet; существующий session guard сохраняется.
+Cart domain остаётся UI-agnostic и не содержит Notification knowledge.
+
+Cart message: «Товар добавлен в корзину». Favorite semantic event/presentation
+поддерживаются: «Товар добавлен в избранное», но production Favorite integration
+отложена до реальной Favorite command success/failure boundary. Local toggle
+не считать подтверждённым сохранением. Future interactive variants требуют
+отдельного lifetime/dismiss/accessibility решения; не наследуют автоматически
+короткий success timer. Success использует polite status announcement без focus steal.

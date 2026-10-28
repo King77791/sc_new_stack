@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useOptionalCart } from '@/features/cart/CartProvider';
-import type { ConfigurationKey, MutationResult } from '@/features/cart/cart.types';
+import type { ConfigurationKey, MutationResult, SuccessfulAdd } from '@/features/cart/cart.types';
+import { useNotification } from '@/components/Notification/NotificationProvider';
+import { cartAddedEvent } from '@/components/Notification/notification.types';
 import type { ProductCardConfiguration, ProductCardData, ProductCardPresentation } from './ProductCard.types';
 import styles from './ProductCard.module.css';
 import { ProductPurchaseSheet } from './ProductPurchaseSheet';
@@ -84,6 +86,7 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
   children: ReactNode;
 }>) {
   const cart = useOptionalCart();
+  const notify = useNotification();
   const preorder = data.purchasePresentation === 'preorder';
   const options = !preorder && data.weight?.presentation === 'selectable' ? data.weight.configurations : undefined;
   // An unavailable initial configuration needs an explicit API/business decision, not a UI fallback.
@@ -137,9 +140,14 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
       setPending(false);
     }
   };
+  const reportAdd = async (operation: Promise<MutationResult<SuccessfulAdd>>) => {
+    const result = await operation;
+    if (result.ok) notify(cartAddedEvent(result.value));
+    return result;
+  };
   const add = (focus: 'add' | null = null) => {
     if (!cart || !configuration || preorder) return;
-    return mutate(() => cart.addItem({ productKey, configuration, quantity: 1, presentation: snapshot(selected) }), focus);
+    return mutate(() => reportAdd(cart.addItem({ productKey, configuration, quantity: 1, presentation: snapshot(selected) })), focus);
   };
   const decrementFixed = () => {
     if (!cart || !configuration || options || preorder) return;
@@ -216,7 +224,7 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
           const item = cart.getItem(productKey, target);
           const result = item
             ? await mutate(() => cart.setItemQuantity(item.id, amount))
-            : await mutate(() => cart.addItem({ productKey, configuration: target, quantity: amount, presentation: snapshot(option) }));
+            : await mutate(() => reportAdd(cart.addItem({ productKey, configuration: target, quantity: amount, presentation: snapshot(option) })));
           if (!result?.ok || session !== sheetSession.current) return false;
           setSelectedId(option.id); closeSheet();
           return true;

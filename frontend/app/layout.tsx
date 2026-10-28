@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/SiteHeader/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter/SiteFooter';
 import { CartApplicationProvider } from '@/features/cart/CartApplicationProvider';
 import { CartWidgetContainer } from '@/features/cart/CartWidgetContainer';
+import { NotificationProvider, NotificationHost } from '@/components/Notification/NotificationProvider';
 import './globals.css';
 
 const ceraPro = localFont({
@@ -27,12 +28,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ru">
       <body className={ceraPro.variable}>
-        <CartApplicationProvider>
+        <NotificationProvider><CartApplicationProvider>
           <SiteHeader />
           <div className="app-content">{children}</div>
           <CartWidgetContainer unavailablePriceLabel="Цена недоступна" />
           <SiteFooter />
-        </CartApplicationProvider>
+          <NotificationHost />
+        </CartApplicationProvider></NotificationProvider>
       </body>
     </html>
   );

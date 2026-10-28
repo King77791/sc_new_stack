@@ -1,0 +1,38 @@
+.stage {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px) - 2px);
+  z-index: 21;
+  padding: 2px 18px;
+  overflow: clip;
+  pointer-events: none;
+}
+.shell {
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 16px 8px;
+  border-radius: 20px;
+  background: rgb(0 32 33 / 80%);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 10%);
+  backdrop-filter: blur(20px);
+  color: var(--color-header-text);
+  font-family: var(--font-cera-pro), sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 25px;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+.content { padding-inline: 16px; }
+.stage > .shell { position: relative; left: calc(50vw - 18px); margin-inline: 0; }
+.shell[data-phase] { transition: transform 625ms ease-in-out; }
+.shell[data-phase='starting'] { transform: translateX(calc(-50vw - 100% - 4px)); transition: none; }
+.shell[data-phase='entering'], .shell[data-phase='resting'] { transform: translateX(-50%); }
+.shell[data-phase='exiting'] { transform: translateX(calc(50vw + 4px)); }
+.live { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .shell[data-phase] { transition: none; transform: translateX(-50%); }
+  .shell[data-phase='starting'] { visibility: hidden; }
+}
