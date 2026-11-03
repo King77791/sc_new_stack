@@ -178,7 +178,7 @@ try {
   await cardClick('a', 'button[aria-haspopup="dialog"]');
   await waitFor(`!!document.querySelector('dialog[open]')`);
   await evaluate(`Array.from(document.querySelectorAll('dialog [aria-label="Выберите вес"] button')).find(node => node.textContent === '100 г.').click()`);
-  for (let index = 0; index < 2; index++) await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`);
+  for (let index = 0; index < 3; index++) await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`);
   await evaluate(`Array.from(document.querySelectorAll('dialog button')).find(node => node.textContent === 'Добавить в корзину').click()`);
   await waitFor(`!document.querySelector('dialog')`); await cardQuantity('a', 3);
   await width(414); assert.equal(await evaluate(`getComputedStyle(${widget}).display`), 'none');
@@ -200,6 +200,38 @@ try {
   assert.deepEqual(await items(), []); assert.equal(await evaluate(`!!${widget}`), false);
   assert.equal(await indicator(),false);
   console.log('PASS E2E-9 / E2E-10: persistent Provider and Widget node across navigation, reload reset; Header indicator absent');
+
+  for(const scenario of ['neighbor','header','widget-control','body-after-header','last','last-header','failure','unmount']) {
+    await send('Page.reload'); await waitHydrated(); await width(1280);
+    await send('Page.bringToFront'); await waitFor('document.hasFocus()');
+    await add('a'); if(!scenario.startsWith('last')){await fullSelect('a','100 г.');await add('a');}
+    await toggle();
+    await evaluate(`(() => {
+      const node=${widget}.querySelector('li button');let fiber=node[Object.keys(node).find(k=>k.startsWith('__reactFiber$'))];const carts=new Set();
+      while(fiber&&!carts.size){for(const v of [fiber,fiber.alternate])for(let d=v?.dependencies?.firstContext;d;d=d.next)if(typeof d.memoizedValue?.getItem==='function')carts.add(d.memoizedValue);fiber=fiber.return;}
+      window.__widgetCalls=0;
+      window.__widgetFocusEvents=[];document.addEventListener('focusin',event=>window.__widgetFocusEvents.push({id:event.target.id,tag:event.target.tagName,label:event.target.getAttribute('aria-label')}),true);
+      for(const cart of carts){const original=cart.removeItem;window.__widgetCart=cart;window.__widgetOriginal=original;cart.removeItem=(...args)=>{window.__widgetCalls++;return new Promise(resolve=>{window.__widgetRelease=()=>${q(scenario)}==='failure'?resolve({ok:false,reason:'not-found'}):original(...args).then(resolve);});};}
+      window.__widgetOrigin=node;window.__widgetNeighbor=${widget}.querySelectorAll('li button')[1];window.__widgetToggle=${widget}.querySelector('button[aria-label]');
+      node.focus();node.click();
+    })()`);
+    if(scenario.includes('header')){await evaluate(`document.getElementById('site-header-basket-link').focus()`);assert.equal(await evaluate(`document.activeElement.id`),'site-header-basket-link');}
+    if(scenario==='body-after-header')await evaluate('document.activeElement.blur()');
+    if(scenario==='widget-control')await evaluate('window.__widgetToggle.focus()');
+    if(scenario==='unmount'){
+      await evaluate('(async()=>{for(const item of window.__widgetCart.items)await window.__widgetOriginal(item.id)})()');
+      await waitFor(`!${widget}`);
+      await evaluate(`document.getElementById('site-header-basket-link').focus()`);
+    }
+    await evaluate('window.__widgetRelease()'); await frames();
+    const expected=scenario==='last'||scenario==='last-header'||scenario==='header'||scenario==='unmount'?`document.getElementById('site-header-basket-link')`:scenario==='widget-control'?'window.__widgetToggle':scenario==='body-after-header'?'document.body':scenario==='failure'?'window.__widgetOrigin':'window.__widgetNeighbor';
+    assert.equal(await evaluate(`document.activeElement===${expected}`),true,
+      JSON.stringify({scenario,events:await evaluate('window.__widgetFocusEvents'),active:await evaluate('({tag:document.activeElement.tagName,id:document.activeElement.id,label:document.activeElement.getAttribute("aria-label")})')}));
+    assert.equal(await evaluate('window.__widgetCalls'),1);
+    assert.equal((await items()).length,scenario==='failure'?2:scenario.startsWith('last')||scenario==='unmount'?0:1);
+    console.log(`PASS async Widget ${scenario}: canonical result and focus ownership`);
+  }
+  await send('Page.navigate',{url:`${base}/dev/cart-widget-integration`});await waitHydrated();
 
   await clickText('ADD 21 diagnostic positions');
   await waitFor(`${widget}?.querySelectorAll('li').length === 21`);

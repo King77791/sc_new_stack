@@ -298,7 +298,11 @@
 .weightMenu li + li { margin-top: 4px; }
 .weightMenu [aria-selected='true'] { color: var(--color-cream-gold); }
 .weightMenu [data-active='true'] { background: rgb(255 255 255 / 10%); opacity: 1; }
-.weightMenu [aria-disabled='true'] { opacity: .35; cursor: not-allowed; }
+.weightMenu [data-unavailable]::after { content: 'Нет в наличии'; display: block; font-size: 11px; line-height: 14px; color: var(--color-cream-gold); }
+.availabilityStatus { position: absolute; right: 8px; bottom: 34px; color: var(--color-cream-gold); font-size: 10px; line-height: 12px; }
+.unavailableIncrease:disabled { opacity: .35; }
+.full .availabilityStatus { left: 24px; right: auto; bottom: 4px; }
+@media (min-width: 1280px) { .responsive .availabilityStatus { left: 24px; right: auto; bottom: 4px; } }
 .full .marquee > span { display: block; overflow: hidden; text-overflow: ellipsis; }
 .weightControl .weight { position: relative; }
 .weight > img {
@@ -330,7 +334,31 @@
 .purchaseControls .quantityBar { flex: 1; min-width: 0; width: auto; }
 .purchaseManagement { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; padding: 0; border-radius: 7px; background: var(--compact-cart-background); }
 .purchaseManagement img { width: auto; height: 16px; opacity: .8; }
+.purchaseSurface { position: relative; flex: 0 0 32px; width: 160px; height: 32px; }
+.purchaseSurface[data-pending-visible] > .purchaseControls,
+.purchaseSurface[data-pending-visible] > .cart { opacity: .55; }
+.pendingOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--color-header-green) 25%, transparent);
+  pointer-events: none;
+}
+.pendingSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--color-cream-gold) 25%, transparent);
+  border-top-color: var(--color-cream-gold);
+  border-radius: 50%;
+  animation: pendingTurn .8s linear infinite;
+}
+.selectionEnter { animation: purchaseEnter var(--motion-duration) ease-out; }
+@keyframes pendingTurn { to { transform: rotate(360deg); } }
+@keyframes purchaseEnter { from { opacity: .65; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
+  .pendingSpinner, .selectionEnter { animation: none; }
   .weight > img, .full .productImage, .full .regionalBackground, .full .geography, .full .favorite { transition: none; }
 }
 

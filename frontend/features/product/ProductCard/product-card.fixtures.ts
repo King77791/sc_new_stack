@@ -31,10 +31,10 @@ export const productCardExamples: readonly Readonly<{
     data: {
       kind: 'tea', slug: 'tea-presentation', title: 'Золотистый чай', image: teaImage,
       country, moods, weight: { presentation: 'selectable', label: '50 г.', configurations: [
-        { id: 'tea-50', label: '50 г.', price: { current: '1 030 ₽' } },
-        { id: 'tea-100', label: '100 г.', price: { current: '1 980 ₽' } },
-        { id: 'tea-200', label: '200 г.', price: { current: '3 800 ₽' } },
-        { id: 'tea-250', label: '250 г.', price: { current: '4 650 ₽' } },
+        { id: 'tea-50', label: '50 г.', weightGrams: 50, price: { current: '1 030 ₽' } },
+        { id: 'tea-100', label: '100 г.', weightGrams: 100, price: { current: '1 980 ₽' } },
+        { id: 'tea-200', label: '200 г.', weightGrams: 200, price: { current: '3 800 ₽' } },
+        { id: 'tea-250', label: '250 г.', weightGrams: 250, price: { current: '4 650 ₽' } },
       ] },
       price: { current: '1 030 ₽' }, purchasePresentation: 'regular',
     },
@@ -46,10 +46,10 @@ export const productCardExamples: readonly Readonly<{
       // Independent labels demonstrate that Country and Origin are not one domain field.
       country: { slug: 'india', label: 'Индия' }, origin: { label: 'Дарджилинг' }, moods,
       weight: { presentation: 'selectable', label: '50 г.', configurations: [
-        { id: 'discount-50', label: '50 г.', price: { current: '640 ₽', discount: { original: '850 ₽', label: '−25%' } } },
-        { id: 'discount-100', label: '100 г.', price: { current: '1 200 ₽', discount: { original: '1 600 ₽', label: '−25%' } } },
-        { id: 'discount-200', label: '200 г.', price: { current: '2 280 ₽', discount: { original: '3 040 ₽', label: '−25%' } } },
-        { id: 'discount-250', label: '250 г.', price: { current: '2 700 ₽', discount: { original: '3 600 ₽', label: '−25%' } } },
+        { id: 'discount-50', label: '50 г.', weightGrams: 50, price: { current: '640 ₽', discount: { original: '850 ₽', label: '−25%' } } },
+        { id: 'discount-100', label: '100 г.', weightGrams: 100, price: { current: '1 200 ₽', discount: { original: '1 600 ₽', label: '−25%' } } },
+        { id: 'discount-200', label: '200 г.', weightGrams: 200, price: { current: '2 280 ₽', discount: { original: '3 040 ₽', label: '−25%' } } },
+        { id: 'discount-250', label: '250 г.', weightGrams: 250, price: { current: '2 700 ₽', discount: { original: '3 600 ₽', label: '−25%' } } },
       ] },
       price: { current: '640 ₽', discount: { original: '850 ₽', label: '−25%' } },
       purchasePresentation: 'regular',
@@ -61,7 +61,7 @@ export const productCardExamples: readonly Readonly<{
       kind: 'tea', slug: 'preorder-tea-presentation', title: 'Жень Шень',
       image: { src: '/images/products/ginseng-tea.png', alt: 'Зелёные листья чая', width: 500, height: 500 },
       country, moods: [moods[0]], weight: { presentation: 'selectable', label: '50 г.', configurations: [
-        { id: 'preorder-50', label: '50 г.', price: { current: '1 600 ₽' } },
+        { id: 'preorder-50', label: '50 г.', weightGrams: 50, price: { current: '1 600 ₽' } },
       ] },
       price: { current: '1 600 ₽' }, purchasePresentation: 'preorder',
     },
@@ -91,10 +91,10 @@ export const productCardExamples: readonly Readonly<{
       title: 'Дарджилин Апельсиновая Долина — весенний сбор с длинным названием', image: teaImage,
       country: { slug: 'india', label: 'Индия' }, origin: { label: 'Дарджилинг' }, moods,
       weight: { presentation: 'selectable', label: '50 г.', configurations: [
-        { id: 'long-50', label: '50 г.', price: { current: '2 800 ₽' } },
-        { id: 'long-100', label: '100 г.', price: { current: '5 400 ₽' } },
-        { id: 'long-200', label: '200 г.', price: { current: '10 300 ₽' } },
-        { id: 'long-250', label: '250 г.', price: { current: '12 600 ₽' } },
+        { id: 'long-50', label: '50 г.', weightGrams: 50, price: { current: '2 800 ₽' } },
+        { id: 'long-100', label: '100 г.', weightGrams: 100, price: { current: '5 400 ₽' } },
+        { id: 'long-200', label: '200 г.', weightGrams: 200, price: { current: '10 300 ₽' } },
+        { id: 'long-250', label: '250 г.', weightGrams: 250, price: { current: '12 600 ₽' } },
       ] },
       price: { current: '2 800 ₽' }, purchasePresentation: 'regular',
     },
@@ -104,10 +104,10 @@ export const productCardExamples: readonly Readonly<{
     data: {
       kind: 'tea', slug: 'availability-tea-presentation', title: 'Чай — доступность фасовок', image: teaImage,
       country, moods, weight: { presentation: 'selectable', label: '50 г.', configurations: [
-        { id: 'availability-50', label: '50 г.', price: { current: '1 030 ₽' } },
-        { id: 'availability-100', label: '100 г.', price: { current: '1 980 ₽' } },
-        { id: 'availability-200', label: '200 г.', price: { current: '3 800 ₽' }, disabled: true },
-        { id: 'availability-250', label: '250 г.', price: { current: '4 650 ₽' }, disabled: true },
+        { id: 'availability-50', label: '50 г.', weightGrams: 50, price: { current: '1 030 ₽' } },
+        { id: 'availability-100', label: '100 г.', weightGrams: 100, price: { current: '1 980 ₽' } },
+        { id: 'availability-200', label: '200 г.', weightGrams: 200, price: { current: '3 800 ₽' }, disabled: true },
+        { id: 'availability-250', label: '250 г.', weightGrams: 250, price: { current: '4 650 ₽' }, disabled: true },
       ] },
       price: { current: '1 030 ₽' }, purchasePresentation: 'regular',
     },

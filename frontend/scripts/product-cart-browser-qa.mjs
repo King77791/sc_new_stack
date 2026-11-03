@@ -56,7 +56,7 @@ async function clickText(text) {
 }
 async function cardClick(id, selector) {
   await waitFor(`(() => {const node=[...${scope(id)}.querySelectorAll(${q(selector)})].find(${visible});return node && !node.disabled;})()`);
-  await evaluate(`(() => { const node = [...${scope(id)}.querySelectorAll(${q(selector)})].find(${visible}); if (!node || node.disabled) throw new Error('Card control unavailable'); node.click(); })()`);
+  await evaluate(`(() => { const node = [...${scope(id)}.querySelectorAll(${q(selector)})].find(${visible}); if (!node || node.disabled) throw new Error('Card control unavailable'); node.focus(); node.click(); })()`);
 }
 async function width(value) {
   await send('Emulation.setDeviceMetricsOverride', { width: value, height: 1000, deviceScaleFactor: 1, mobile: false });
@@ -100,19 +100,20 @@ async function openSheet(id = 'a') {
 }
 
 // Fault/defer only the dev fixture's consumed Cart interface. No production API changes.
-async function interceptCartCommand(command, mode) {
+async function interceptCartCommand(command, mode, id = 'a') {
   await evaluate(`(() => {
-    const node = ${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]');
+    const node = ${scope(id)}.querySelector('button[aria-label="Уменьшить количество"],button[aria-label^="В корзину"],button[aria-label^="Добавить в корзину"]');
     let fiber = node[Object.keys(node).find(key=>key.startsWith('__reactFiber$'))]; const carts=new Set();
     while (fiber && !carts.size) { for(const version of [fiber,fiber.alternate])for (let dep=version?.dependencies?.firstContext;dep;dep=dep.next) {
       if (typeof dep.memoizedValue?.getItem==='function') carts.add(dep.memoizedValue);
     } fiber=fiber.return; }
     if (!carts.size) throw Error('Dev Cart interface not found');
     const originals=[...carts].map(cart=>({cart,original:cart[${q(command)}]}));
-    window.__quantityInjection={calls:0,restore:()=>{for(const {cart,original} of originals)cart[${q(command)}]=original;}};
+    window.__quantityInjection={cart:originals[0].cart,original:originals[0].original,calls:0,restore:()=>{for(const {cart,original} of originals)cart[${q(command)}]=original;}};
     for(const {cart,original} of originals)cart[${q(command)}]=(...args)=>{window.__quantityInjection.calls++;
       return ${q(mode)}==='fail' ? Promise.resolve({ok:false,reason:'not-found'})
-        : new Promise(resolve=>{window.__quantityInjection.release=()=>original(...args).then(resolve);});};
+        : new Promise(resolve=>{window.__quantityInjection.release=()=>${q(mode)}==='defer-fail'
+          ? resolve({ok:false,reason:'not-found'}) : original(...args).then(resolve);});};
   })()`);
 }
 async function restoreCartCommand() {
@@ -130,7 +131,7 @@ async function draftTo(amount) {
   assert.equal(await draft(), amount);
 }
 async function confirm(double = false) {
-  await evaluate(`(() => { const button = [...document.querySelectorAll('dialog button')].find(node => node.textContent === 'Добавить в корзину'); button.click(); ${double ? 'button.click();' : ''} })()`);
+  await evaluate(`(() => { const button = document.querySelector('dialog button[aria-busy]'); if(button.disabled)throw Error('Disabled Confirm'); button.click(); ${double ? 'button.click();' : ''} })()`);
   await waitFor(`!document.querySelector('dialog')`);
 }
 async function dismiss() {
@@ -183,7 +184,9 @@ try {
   console.log('PASS fixed full ADD and merge');
 
   await reset(); await width(375);
-  await openSheet(); assert.equal(await draft(), 1); assert.deepEqual(await items(), []);
+  await openSheet(); assert.equal(await draft(), 0); assert.deepEqual(await items(), []);
+  assert.equal(await evaluate('document.querySelector("dialog button[aria-busy]").disabled'),true);
+  await draftTo(1);
   await confirm(true); await cardQuantity('a', 1); await cardQuantity('b', 1);
   assert.equal(await cartQuantity(), 1);
   console.log('PASS COMPACT-1 and double confirm: one ADD');
@@ -195,7 +198,7 @@ try {
   await diagnostic('ADD', 1);
   await openSheet(); assert.equal(await draft(), 2);
   await sheetSelect('100 г.'); assert.equal(await draft(), 1);
-  await sheetSelect('200 г.'); assert.equal(await draft(), 1);
+  await sheetSelect('200 г.'); assert.equal(await draft(), 0);
   await sheetSelect('50 г.'); assert.equal(await draft(), 2);
   await draftTo(3); await sheetSelect('50 г.'); assert.equal(await draft(), 3); // same target keeps edits
   await dismiss(); assert.equal(await cartQuantity(), 2);
@@ -232,6 +235,101 @@ try {
   await dismiss(); await cardQuantity('a', 1);
   await clickSelector('input[type="checkbox"]');
   console.log('PASS COMPACT-9: local quote failure, no close or false commit');
+
+  const sheetButton = () => evaluate(`({label:document.querySelector('dialog button[aria-busy]').textContent,disabled:document.querySelector('dialog button[aria-busy]').disabled})`);
+  async function traceSheetCommands() {
+    await evaluate(`(() => {
+      let fiber=document.querySelector('dialog')[Object.keys(document.querySelector('dialog')).find(k=>k.startsWith('__reactFiber$'))];const carts=new Set();
+      while(fiber&&!carts.size){for(const version of [fiber,fiber.alternate])for(let dep=version?.dependencies?.firstContext;dep;dep=dep.next)if(typeof dep.memoizedValue?.getItem==='function')carts.add(dep.memoizedValue);fiber=fiber.return;}
+      if(!carts.size)throw Error('Sheet Cart interface not found');
+      const originals=[],calls=[];
+      for(const cart of carts)for(const name of ['addItem','setItemQuantity','removeItem']){const original=cart[name];originals.push({cart,name,original});cart[name]=(...args)=>{calls.push({name,args});return original(...args);};}
+      window.__sheetTrace={calls,restore:()=>{for(const {cart,name,original}of originals)cart[name]=original;}};
+    })()`);
+  }
+  async function assertSheetCommand(expected) {
+    const calls = await evaluate('window.__sheetTrace.calls');
+    assert.deepEqual(calls.map(call=>call.name),expected?[expected]:[]);
+    for (const call of calls) if(call.name==='setItemQuantity') assert.ok(call.args[1]>0,'SET zero is forbidden');
+    await evaluate('window.__sheetTrace.restore();delete window.__sheetTrace');
+  }
+  for (const viewport of [375,414]) {
+    await reset(); await width(viewport); await openSheet();
+    assert.equal(await draft(),0); assert.equal((await sheetButton()).disabled,true);
+    assert.equal(await evaluate(`document.querySelector('dialog button[aria-label="Уменьшить количество"]').disabled`),true);
+    await traceSheetCommands(); await evaluate('document.querySelector("dialog button[aria-busy]").click()');
+    await assertSheetCommand(null); assert.deepEqual(await items(),[]);
+    await draftTo(3); assert.equal((await sheetButton()).label,'Добавить в корзину');
+    await traceSheetCommands(); await confirm(true); await assertSheetCommand('addItem'); await cardQuantity('a',3);
+    await openSheet(); assert.equal(await draft(),3); assert.equal((await sheetButton()).label,'Сохранить');
+    await draftTo(1); await traceSheetCommands(); await confirm(); await assertSheetCommand('setItemQuantity');
+    await openSheet(); await draftTo(3); await sheetSelect('100 г.'); assert.equal(await draft(),0);
+    await sheetSelect('50 г.'); assert.equal(await draft(),1);
+    await draftTo(0); assert.equal((await sheetButton()).label,'Удалить');
+    await sheetSelect('100 г.'); assert.equal((await sheetButton()).disabled,true);
+    await sheetSelect('50 г.'); assert.equal(await draft(),1);
+    await draftTo(0); await dismiss(); await openSheet(); assert.equal(await draft(),1);
+    await draftTo(0); await draftTo(1); assert.equal((await sheetButton()).label,'Сохранить');
+    await traceSheetCommands(); await confirm(); await assertSheetCommand('setItemQuantity');
+    await diagnostic('SET',0,3); await diagnostic('ADD',3,1);
+    await openSheet(); await sheetSelect('250 г.'); assert.equal(await draft(),1);
+    for(const [label,amount]of [['50 г.',3],['100 г.',0],['200 г.',0],['250 г.',1]]){await sheetSelect(label);assert.equal(await draft(),amount);}
+    await draftTo(0); await traceSheetCommands(); await confirm(true); await assertSheetCommand('removeItem');
+    await cardQuantity('a',3); assert.ok(await evaluate(`${scope('a')}.textContent.includes('50 г.')`));
+    await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]')`);
+    await openSheet(); await draftTo(0);
+    assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth&&document.querySelector("dialog").scrollWidth<=document.querySelector("dialog").clientWidth'),true);
+    await screenshot(`zero-remove-${viewport}`);
+    await traceSheetCommands(); await confirm(); await assertSheetCommand('removeItem'); await cardQuantity('a',0);
+    assert.deepEqual(await items(),[]);
+    await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-haspopup="dialog"]')`);
+    console.log(`PASS zero A–R @${viewport}: absence0, boundaries, ADD/SET/REMOVE labels, intent reset, single-target drafts, highest remaining and focus`);
+  }
+  // S–W: actual target is re-read, but an external ADD cannot grant removal intent.
+  await reset(); await openSheet(); await sheetSelect('100 г.');
+  await diagnostic('ADD',1,2); assert.equal(await draft(),0); assert.equal((await sheetButton()).disabled,true);
+  assert.ok(await evaluate('document.querySelector("dialog [role=status]").textContent.includes("уже добавлен")'));
+  await traceSheetCommands(); await evaluate('document.querySelector("dialog button[aria-busy]").click()');
+  await assertSheetCommand(null); assert.equal(await cartQuantity('tea-100'),2);
+  await sheetSelect('50 г.'); await sheetSelect('100 г.'); assert.equal(await draft(),2); await dismiss();
+  await openSheet(); await sheetSelect('100 г.'); await draftTo(0); await diagnostic('REMOVE',1);
+  await traceSheetCommands(); await confirm(); await assertSheetCommand(null); await cardQuantity('a',0);
+  await diagnostic('ADD',1,1); await openSheet(); await sheetSelect('100 г.'); await draftTo(3); await diagnostic('REMOVE',1);
+  await traceSheetCommands(); await confirm(); await assertSheetCommand('addItem'); assert.equal(await cartQuantity('tea-100'),3);
+  await openSheet(); await sheetSelect('200 г.'); await draftTo(2); await diagnostic('ADD',2,1);
+  await traceSheetCommands(); await confirm(); await assertSheetCommand('setItemQuantity'); assert.equal(await cartQuantity('tea-200'),2);
+  await openSheet(); await sheetSelect('100 г.'); await draftTo(0); await diagnostic('SET',1,5);
+  await traceSheetCommands(); await confirm(); await assertSheetCommand('removeItem'); await cardQuantity('a',2);
+  console.log('PASS zero races S–W: untouched0 external ADD protected, achieved absence no-op, positive ADD/SET re-read, explicit REMOVE after external SET');
+  for(const [name,indices,removed,highest]of [
+    ['X',[0,1,2],1,2],['Y',[0,1,2,3],3,2],['Z',[0,2,3],0,3],['AA',[0,1],0,1],['AB',[0,1],1,0],['AC',[1],1,null],
+  ]){
+    await reset(); for(const index of [...indices].reverse())await diagnostic('ADD',index,1);
+    await openSheet(); await sheetSelect(['50 г.','100 г.','200 г.','250 г.'][removed]); await draftTo(0);
+    await traceSheetCommands(); await confirm(); await assertSheetCommand('removeItem');
+    await cardQuantity('a',highest===null?0:1);
+    if(highest!==null)assert.ok(await evaluate(`${scope('a')}.textContent.includes('${[50,100,200,250][highest]} г.')`));
+    console.log(`PASS Sheet highest ${name}: REMOVE${[50,100,200,250][removed]} → ${highest===null?'CTA':[50,100,200,250][highest]}`);
+  }
+  // REMOVE failure and pending retain draft/intent; rapid Confirm stays single-flight.
+  await reset(); await diagnostic('ADD',0,3); await diagnostic('ADD',3,1);
+  await interceptCartCommand('removeItem','defer-fail'); await openSheet(); await sheetSelect('250 г.'); await draftTo(0);
+  await evaluate('document.querySelector("dialog button[aria-busy]").click();document.querySelector("dialog button[aria-busy]").click()');
+  await waitFor('document.querySelector("dialog button[aria-busy]").disabled');
+  assert.equal(await evaluate('window.__quantityInjection.calls'),1);
+  assert.equal(await evaluate(`[...document.querySelectorAll('dialog [aria-label="Выберите вес"] button')].every(n=>n.disabled)`),true);
+  await evaluate('window.__quantityInjection.release()'); await waitFor('!!document.querySelector("dialog [role=alert]")');
+  assert.equal(await draft(),0); assert.equal((await sheetButton()).label,'Удалить'); assert.equal(await cartQuantity('tea-250'),1);
+  await restoreCartCommand(); await confirm(); await cardQuantity('a',3);
+  console.log('PASS Sheet REMOVE failure/retry and pending single-flight');
+
+  await reset(); await diagnostic('ADD',0,1); await diagnostic('ADD',1,1);
+  await interceptCartCommand('removeItem','fail');
+  await evaluate(`window.__quantityInjection.cart.addItem({productKey:'other-tea',configuration:{kind:'selectable',id:'tea-250'},quantity:4,presentation:{slug:'other-tea',title:'Other Tea',configurationLabel:'250 г.'}})`);
+  await restoreCartCommand(); await openSheet(); await sheetSelect('100 г.'); await draftTo(0); await confirm(); await cardQuantity('a',1);
+  assert.ok(await evaluate(`${scope('a')}.textContent.includes('50 г.')`));
+  assert.equal((await items()).find(item=>item.productKey==='other-tea').quantity,4);
+  console.log('PASS Sheet highest isolation: another Product / 250 cannot determine representative configuration');
 
   await reset();
   for (const id of ['pressed', 'ceramics']) {
@@ -271,9 +369,9 @@ try {
     await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]')`);
     await openSheet(); await key('Escape'); await waitFor('!document.querySelector("dialog")');
     await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]')`);
-    await cardClick('b','button[aria-label="Уменьшить количество"]'); await cardQuantity('b',0);
+    await cardClick('b','button[aria-label="Уменьшить количество"]'); await cardQuantity('b',2);
     assert.equal(await cartQuantity(),0); assert.equal(await cartQuantity('tea-100'),2);
-    assert.ok(await evaluate(`${scope('b')}.textContent.includes('50 г.')`));
+    assert.ok(await evaluate(`${scope('b')}.textContent.includes('100 г.')`));
     await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',1);
     await evaluate(`${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]').focus()`);
     await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',0);
@@ -284,8 +382,280 @@ try {
     await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label^="Выбрать фасовку"]')`);
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
     assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true,JSON.stringify(await evaluate(`({viewport:innerWidth,scroll:document.documentElement.scrollWidth,x:scrollX,body:document.body.getBoundingClientRect().toJSON(),offenders:[...document.querySelectorAll('body *')].filter(n=>n.scrollWidth>innerWidth).slice(0,12).map(n=>({tag:n.tagName,class:n.className,scroll:n.scrollWidth,right:n.getBoundingClientRect().right,width:n.getBoundingClientRect().width,overflow:getComputedStyle(n).overflow,phase:n.dataset.phase}))})`)));
-    console.log(`PASS unified compact ${viewport}: direct +/-/REMOVE, isolation, no auto-selection, bag geometry/semantics, Sheet ADD/SET and focus`);
+    console.log(`PASS unified compact ${viewport}: direct +/-/REMOVE, highest remaining selection, bag geometry/semantics, Sheet ADD/SET and focus`);
   }
+
+  // Observe actual animation events and delayed visibility, rather than React state internals.
+  async function watchFeedback() {
+    await evaluate(`(() => {
+      const root=${scope('a')};
+      window.__feedbackWatch?.stop();
+      const watch={enters:0,shows:[],started:performance.now(),transitions:[]};
+      const enter=e=>{if(e.animationName.includes('purchaseEnter')){watch.enters++;watch.transitions.push({duration:getComputedStyle(e.target).animationDuration,frames:e.target.getAnimations().map(a=>a.effect.getKeyframes())});}};
+      const observer=new MutationObserver(records=>{for(const r of records)if(r.type==='attributes'&&r.attributeName==='data-pending-visible'&&r.target.hasAttribute('data-pending-visible'))watch.shows.push(performance.now());});
+      observer.observe(root,{subtree:true,attributes:true,attributeFilter:['data-pending-visible']});
+      root.addEventListener('animationstart',enter);
+      watch.stop=()=>{observer.disconnect();root.removeEventListener('animationstart',enter);};
+      window.__feedbackWatch=watch;
+    })()`);
+  }
+  const feedback = () => evaluate(`({enters:window.__feedbackWatch.enters,shows:window.__feedbackWatch.shows.length})`);
+  const surface = `${scope('a')}.querySelector('[aria-busy]')`;
+  const geometry = () => evaluate(`(() => {const root=${scope('a')};return [root.querySelector('article'),root.querySelector('[aria-busy]'),root.querySelector('[role="group"]').parentElement,root.querySelector('button[aria-label^="Выбрать фасовку"]'),root.querySelector('h3'),root.querySelector('img')].map(n=>{const r=n.getBoundingClientRect();return [r.x,r.y,r.width,r.height];});})()`);
+  for (const viewport of [375,414]) {
+    await reset(); await width(1280); await diagnostic('ADD',0,3); await diagnostic('ADD',3,1);
+    await fullSelect('a','250 г.'); await width(viewport); await watchFeedback();
+    const before = await geometry();
+    await evaluate(`${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]').focus()`);
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',3);
+    await waitFor('window.__feedbackWatch.enters===1');
+    assert.equal(await evaluate('window.__feedbackWatch.transitions[0].duration'),'0.18s');
+    assert.equal((await feedback()).shows,0,'Fast REMOVE must never flash a spinner');
+    assert.deepEqual(await geometry(),before,'Enter opacity must not move content or controls');
+    await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]')`);
+    await waitFor(`${scope('a')}.querySelector('[role="group"]').parentElement.getAnimations().length===0`);
+    for (const name of ['Уменьшить количество','Увеличить количество']) {
+      await cardClick('a',`button[aria-label="${name}"]`);
+    }
+    assert.deepEqual(await feedback(),{enters:1,shows:0},'SET +/- cannot trigger selection enter');
+    // Controlled async SET, without any production delay.
+    await interceptCartCommand('setItemQuantity','defer');
+    await evaluate(`(() => {window.__feedbackWatch.started=performance.now();${scope('a')}.querySelector('button[aria-label="Увеличить количество"]').click();if(${surface}.hasAttribute('data-pending-visible'))throw Error('Immediate spinner');})()`);
+    await waitFor(`${surface}.getAttribute('aria-busy')==='true'`);
+    await waitFor(`${surface}.hasAttribute('data-pending-visible')`);
+    assert.ok(await evaluate('window.__feedbackWatch.shows.at(-1)-window.__feedbackWatch.started>=100'));
+    const spinner = await evaluate(`(() => {const s=${surface},overlay=s.lastElementChild,spinner=overlay.firstElementChild,r=overlay.getBoundingClientRect(),b=s.getBoundingClientRect(),i=spinner.getBoundingClientRect();return {surface:[b.width,b.height],overlay:[r.x-b.x,r.y-b.y,r.width,r.height],spinner:[spinner.offsetWidth,spinner.offsetHeight],centered:Math.abs(i.x+i.width/2-b.x-b.width/2)<.1&&Math.abs(i.y+i.height/2-b.y-b.height/2)<.1,hidden:overlay.getAttribute('aria-hidden'),focusable:overlay.tabIndex,disabled:[...s.querySelectorAll('button')].every(n=>n.disabled)};})()`);
+    assert.deepEqual(spinner.surface,[160,32]); assert.deepEqual(spinner.overlay,[0,0,160,32]);
+    assert.deepEqual(spinner.spinner,[16,16]); assert.ok(spinner.centered&&spinner.disabled);
+    assert.equal(spinner.hidden,'true'); assert.equal(spinner.focusable,-1);
+    assert.deepEqual(await geometry(),before);
+    await evaluate(`${scope('a')}.scrollIntoView({block:'center'})`); await screenshot(`pending-${viewport}`);
+    await evaluate(`${scope('a')}.querySelector('button[aria-label="Увеличить количество"]').click()`);
+    assert.equal(await evaluate('window.__quantityInjection.calls'),1,'Single-flight must remain active');
+    await evaluate('window.__quantityInjection.release()'); await cardQuantity('a',4);
+    await waitFor(`${surface}.getAttribute('aria-busy')==='false'&&!${surface}.hasAttribute('data-pending-visible')`);
+    assert.equal((await feedback()).enters,1); await restoreCartCommand();
+    // A new mutation gets a fresh delay; failure removes visible feedback without success animation.
+    await interceptCartCommand('setItemQuantity','defer-fail');
+    await cardClick('a','button[aria-label="Уменьшить количество"]');
+    await waitFor(`${surface}.hasAttribute('data-pending-visible')`);
+    await evaluate('window.__quantityInjection.release()');
+    await waitFor(`${surface}.getAttribute('aria-busy')==='false'&&!${surface}.hasAttribute('data-pending-visible')`);
+    await cardQuantity('a',4); assert.equal((await feedback()).enters,1); await restoreCartCommand();
+    // External REMOVE and Sheet ADD/SET/selection changes are not post-REMOVE occurrences.
+    await diagnostic('REMOVE',0); await cardQuantity('a',0);
+    await openSheet(); await sheetSelect('100 г.'); await draftTo(1); await confirm(); await cardQuantity('a',1);
+    await openSheet(); await sheetSelect('250 г.'); await draftTo(1); await confirm(); await cardQuantity('a',1);
+    await diagnostic('REMOVE',1);
+    assert.equal((await feedback()).enters,1);
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',0);
+    assert.equal((await feedback()).enters,1,'Last configuration removal must not animate replacement');
+    console.log(`PASS feedback @${viewport}: fast/slow/failure, 120ms delay, 16px spinner, local 160×32 surface, no layout shift, narrow enter and focus`);
+  }
+  // Deferred REMOVE combines pending cleanup with the new confirmed-state enter.
+  await reset(); await width(1280); await diagnostic('ADD',0,3); await diagnostic('ADD',3,1);
+  await fullSelect('a','250 г.'); await width(375); await watchFeedback();
+  await interceptCartCommand('removeItem','defer-fail');
+  await cardClick('a','button[aria-label="Уменьшить количество"]');
+  await waitFor(`${surface}.hasAttribute('data-pending-visible')`);
+  await evaluate('window.__quantityInjection.release()');
+  await waitFor(`${surface}.getAttribute('aria-busy')==='false'`); await cardQuantity('a',1);
+  assert.equal((await feedback()).enters,0); await restoreCartCommand();
+  await interceptCartCommand('removeItem','defer');
+  await cardClick('a','button[aria-label="Уменьшить количество"]');
+  await waitFor(`${surface}.hasAttribute('data-pending-visible')`);
+  await evaluate('window.__quantityInjection.release()'); await cardQuantity('a',3);
+  await waitFor('window.__feedbackWatch.enters===1');
+  assert.equal(await evaluate(`${surface}.hasAttribute('data-pending-visible')`),false);
+  await restoreCartCommand();
+  // Reduced motion keeps a static pending ring and applies the selected state immediately.
+  await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await reset(); await width(1280); await diagnostic('ADD',0,3); await diagnostic('ADD',3,1);
+  await fullSelect('a','250 г.'); await width(375); await watchFeedback();
+  await interceptCartCommand('removeItem','defer');
+  await cardClick('a','button[aria-label="Уменьшить количество"]');
+  await waitFor(`${surface}.hasAttribute('data-pending-visible')`);
+  assert.equal(await evaluate(`getComputedStyle(${surface}.lastElementChild.firstElementChild).animationName`),'none');
+  await evaluate('window.__quantityInjection.release()'); await cardQuantity('a',3);
+  assert.equal((await feedback()).enters,0); await restoreCartCommand();
+  await send('Emulation.setEmulatedMedia',{features:[]});
+  // Unmount while pending cancels the delayed callback without state updates on the old card.
+  await interceptCartCommand('setItemQuantity','defer');
+  await cardClick('a','button[aria-label="Увеличить количество"]'); await reset();
+  await evaluate('window.__quantityInjection.release()'); await restoreCartCommand();
+  await cardQuantity('a',0);
+  console.log('PASS deferred REMOVE success/failure, reduced motion and pending unmount');
+
+  await reset(); await interceptCartCommand('addItem','defer','ceramics');
+  await cardClick('ceramics','button[aria-label^="В корзину"]');
+  await waitFor(`!!${scope('ceramics')}.querySelector('[data-pending-visible]')`);
+  await evaluate('window.__quantityInjection.release()'); await cardQuantity('ceramics',1);
+  await waitFor(`!${scope('ceramics')}.querySelector('[data-pending-visible]')`);
+  await waitFor(`document.activeElement===${scope('ceramics')}.querySelector('button[aria-label="Увеличить количество"]')`);
+  assert.equal(await evaluate(`${scope('ceramics')}.querySelector('[role="group"]').parentElement.getAnimations().length`),0);
+  await restoreCartCommand();
+  console.log('PASS fixed compact ADD: delayed local feedback, immediate cleanup, existing plus focus, no selection enter');
+
+  // F2/F5: canonical completion is independent of the latest local UI intent.
+  for (const viewport of [375,414]) {
+    for (const scenario of ['success','failure','newer-target-disappears']) {
+      await reset(); await width(1280);
+      for (const index of [0,1,3]) await diagnostic('ADD',index,1);
+      await fullSelect('a','250 г.'); await width(viewport); await watchFeedback();
+      await interceptCartCommand('removeItem',scenario==='failure'?'defer-fail':'defer');
+      await cardClick('a','button[aria-label="Уменьшить количество"]');
+      await waitFor(`${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]').disabled`);
+      await width(1280); await fullSelect('a','50 г.');
+      if(scenario==='newer-target-disappears')await evaluate(`window.__quantityInjection.original(window.__quantityInjection.cart.getItem('tea-presentation',{kind:'selectable',id:'tea-50'}).id)`);
+      const focus = await evaluate('document.activeElement.getAttribute("aria-label")');
+      await evaluate('window.__quantityInjection.release()');
+      await waitFor(`${surface}.getAttribute('aria-busy')==='false'`);
+      assert.equal(await evaluate(`${scope('a')}.querySelector('button[aria-haspopup="listbox"]').textContent`),'50 г.');
+      assert.equal(await cartQuantity('tea-250'),scenario==='failure'?1:0);
+      await cardQuantity('a',scenario==='newer-target-disappears'?0:1);
+      assert.equal(await evaluate('document.activeElement.getAttribute("aria-label")'),focus);
+      await width(viewport); assert.equal((await feedback()).enters,0);
+      await restoreCartCommand();
+      console.log(`PASS async intent ${scenario} @${viewport}: new selection/focus retained, no stale enter, canonical result respected`);
+    }
+    for(const [direction,expected]of [['Уменьшить количество',2],['Увеличить количество',4]]) {
+      for(const moved of [false,true,'body-after-new-focus']) {
+        await reset(); await width(viewport); await diagnostic('ADD',0,3);
+        await interceptCartCommand('setItemQuantity','defer');
+        await cardClick('a',`button[aria-label="${direction}"]`);
+        await waitFor(`${surface}.getAttribute('aria-busy')==='true'`);
+        if(moved)await evaluate(`document.getElementById('site-header-basket-link').focus()`);
+        if(moved==='body-after-new-focus')await evaluate('document.activeElement.blur()');
+        await evaluate('window.__quantityInjection.release()'); await cardQuantity('a',expected);
+        await waitFor(`${surface}.getAttribute('aria-busy')==='false'`);
+        const target=moved==='body-after-new-focus'?'document.body':moved?`document.getElementById('site-header-basket-link')`:`${scope('a')}.querySelector('button[aria-label="${direction}"]')`;
+        await waitFor(`document.activeElement===${target}`); await restoreCartCommand();
+      }
+    }
+    for(const last of [false,true])for(const moved of [false,true]){
+      await reset(); await diagnostic('ADD',0,1); if(!last)await diagnostic('ADD',1,2);
+      await interceptCartCommand('removeItem','defer');
+      await cardClick('a','button[aria-label="Уменьшить количество"]');
+      if(moved)await evaluate(`document.getElementById('site-header-basket-link').focus()`);
+      await evaluate('window.__quantityInjection.release()'); await cardQuantity('a',last?0:2);
+      const target=moved?`document.getElementById('site-header-basket-link')`:last?`${scope('a')}.querySelector('button[aria-haspopup="dialog"]')`:`${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]')`;
+      await waitFor(`document.activeElement===${target}`); await restoreCartCommand();
+    }
+    console.log(`PASS async ProductCard focus @${viewport}: SET +/- restore, external and subsequent BODY intent preserved, replacement/last REMOVE`);
+  }
+  // Dismissal invalidates the pending Sheet session; a later inline choice remains authoritative.
+  await reset(); await width(1280); await diagnostic('ADD',0,1); await diagnostic('ADD',3,1);
+  await fullSelect('a','250 г.'); await width(375); await interceptCartCommand('setItemQuantity','defer');
+  await openSheet(); await draftTo(2); await evaluate('document.querySelector("dialog button[aria-busy]").click()');
+  await waitFor('document.querySelector("dialog button[aria-busy]").disabled'); await dismiss();
+  await width(1280); await fullSelect('a','50 г.');
+  await evaluate('window.__quantityInjection.release()'); await restoreCartCommand();
+  await waitFor(`${surface}.getAttribute('aria-busy')==='false'`);
+  assert.equal(await cartQuantity('tea-250'),2);
+  assert.equal(await evaluate(`${scope('a')}.querySelector('button[aria-haspopup=listbox]').textContent`),'50 г.');
+  assert.equal(await evaluate('!!document.querySelector("dialog")'),false);
+  console.log('PASS pending Sheet dismiss: canonical SET completes, stale session does not commit selection or steal focus');
+
+  await width(375);
+  for(const command of ['setItemQuantity','removeItem']){
+    await reset(); await diagnostic('ADD',0,command==='setItemQuantity'?3:1);
+    await interceptCartCommand(command,'defer-fail');
+    await cardClick('a','button[aria-label="Уменьшить количество"]');
+    await evaluate(`document.getElementById('site-header-basket-link').focus()`);
+    await evaluate('window.__quantityInjection.release()');
+    await waitFor(`${surface}.getAttribute('aria-busy')==='false'`);
+    assert.equal(await evaluate('document.activeElement.id'),'site-header-basket-link');
+    await cardQuantity('a',command==='setItemQuantity'?3:1); await restoreCartCommand();
+  }
+  await reset(); await diagnostic('ADD',0,1); await interceptCartCommand('removeItem','defer');
+  await cardClick('a','button[aria-label="Уменьшить количество"]'); await reset();
+  await evaluate(`document.getElementById('site-header-basket-link').focus()`);
+  await evaluate('window.__quantityInjection.release()'); await restoreCartCommand();
+  await cardQuantity('a',0); assert.equal(await evaluate('document.activeElement.id'),'site-header-basket-link');
+  console.log('PASS async failures/unmount: pending clears, no stale selection or focus action');
+
+  const matrix = [
+    ['A',[0,1,2,3],0,3], ['B',[0,1,2,3],1,3], ['C',[0,1,2,3],2,3],
+    ['D',[0,1,2,3],3,2], ['E',[0,1,2],0,2], ['F',[0,1,2],1,2],
+    ['G',[0,1,2],2,1], ['H',[0,2,3],0,3], ['I',[0,2,3],2,3],
+    ['J',[0,1],0,1], ['K',[0,1],1,0],
+  ];
+  const labels = ['50 г.','100 г.','200 г.','250 г.'];
+  const selectedLabel = () => evaluate(`(() => {const root=${scope('a')};return [...root.querySelectorAll('span')].find(n=>n.textContent.startsWith('Вес: ')&&n.getClientRects().length)?.textContent;})()`);
+  for (const viewport of [375,414]) {
+    for (const [name, configurations, removed, highest] of matrix) {
+      await reset(); await width(1280);
+      // Deliberately reversed insertion order: last CartItem is not highest weight.
+      for (const index of [...configurations].reverse()) await diagnostic('ADD',index,index === removed ? 1 : index+2);
+      await fullSelect('a',labels[removed]); await width(viewport);
+      await evaluate(`${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]').focus()`);
+      await cardClick('a','button[aria-label="Уменьшить количество"]');
+      await cardQuantity('a',highest+2);
+      assert.equal(await selectedLabel(),`Вес: ${labels[highest]}`);
+      assert.equal(await cartQuantity(`tea-${[50,100,200,250][removed]}`),0);
+      await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]')`);
+      assert.equal(await evaluate(`!!${scope('a')}.querySelector('button[aria-label^="Добавить в корзину"]')`),false);
+      console.log(`PASS matrix ${name} @${viewport}: REMOVE ${labels[removed]} → ${labels[highest]}`);
+    }
+    // Primary UX / Q, with more units in the lighter configuration.
+    await reset(); await width(1280); await diagnostic('ADD',0,3); await diagnostic('ADD',3,1);
+    await fullSelect('a',labels[3]); await width(viewport);
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',3);
+    assert.equal(await selectedLabel(),'Вес: 50 г.');
+    await openSheet(); assert.equal(await draft(),3); await dismiss();
+    assert.equal(await evaluate('document.documentElement.scrollWidth<=innerWidth'),true);
+    await screenshot(`highest-remaining-${viewport}`);
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',2);
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',1);
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',0);
+    assert.deepEqual(await items(),[]);
+    await waitFor(`document.activeElement===${scope('a')}.querySelector('button[aria-haspopup="dialog"]')`);
+    console.log(`PASS M @${viewport}: last 50g removed → initial CTA and focus`);
+  }
+  // L: quantity does not set priority. External removal P must not change selection.
+  await reset(); await width(1280);
+  await diagnostic('ADD',0,10); await diagnostic('ADD',1,5); await diagnostic('ADD',2,1);
+  await fullSelect('a',labels[1]); await width(375);
+  for (const expected of [4,3,2,1]) {
+    await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',expected);
+    assert.equal(await selectedLabel(),'Вес: 100 г.');
+  }
+  await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',1);
+  assert.equal(await selectedLabel(),'Вес: 200 г.');
+  await diagnostic('REMOVE',2); await cardQuantity('a',0);
+  assert.equal(await selectedLabel(),'Вес: 200 г.');
+  assert.equal(await cartQuantity(),10);
+  console.log('PASS L/P: highest weight beats quantity; external REMOVE does not repair selection');
+
+  // Re-read after a deferred REMOVE: another consumer removes the former highest.
+  await reset(); await width(1280);
+  for (const index of [0,2,3]) await diagnostic('ADD',index,index===0?3:1);
+  await fullSelect('a',labels[3]); await width(375);
+  await interceptCartCommand('removeItem','defer');
+  await cardClick('a','button[aria-label="Уменьшить количество"]');
+  await evaluate(`(() => {const {cart,original}=window.__quantityInjection;const item=cart.getItem('tea-presentation',{kind:'selectable',id:'tea-200'});if(!item)throw Error('Missing race target');return original(item.id);})()`);
+  await evaluate('window.__quantityInjection.release()'); await cardQuantity('a',3);
+  assert.equal(await selectedLabel(),'Вес: 50 г.'); await restoreCartCommand();
+  console.log('PASS race: remaining selection reads post-mutation Cart, not pre-REMOVE snapshot');
+
+  // N/O: another Product's highest configuration cannot influence selection; failure preserves it.
+  await reset(); await width(1280); await diagnostic('ADD',0,3); await diagnostic('ADD',3,1);
+  await fullSelect('a',labels[3]); await width(375);
+  await interceptCartCommand('removeItem','fail');
+  await evaluate(`window.__quantityInjection.cart.addItem({productKey:'other-tea',configuration:{kind:'selectable',id:'tea-250'},quantity:4,presentation:{slug:'other-tea',title:'Other Tea',configurationLabel:'250 г.'}})`);
+  await evaluate(`window.__quantityInjection.cart.addItem({productKey:'other-tea',configuration:{kind:'selectable',id:'tea-100'},quantity:2,presentation:{slug:'other-tea',title:'Other Tea',configurationLabel:'100 г.'}})`);
+  await restoreCartCommand(); await interceptCartCommand('removeItem','fail');
+  const beforeFailed250 = await items();
+  await cardClick('a','button[aria-label="Уменьшить количество"]');
+  await waitFor(`!${scope('a')}.querySelector('button[aria-label="Уменьшить количество"]').disabled`);
+  assert.equal(await selectedLabel(),'Вес: 250 г.'); await cardQuantity('a',1);
+  assert.deepEqual(await items(),beforeFailed250);
+  assert.equal(await evaluate('!!document.querySelector("dialog")'),false);
+  await restoreCartCommand();
+  await cardClick('a','button[aria-label="Уменьшить количество"]'); await cardQuantity('a',3);
+  assert.equal(await selectedLabel(),'Вес: 50 г.');
+  assert.equal((await items()).find(item=>item.productKey==='other-tea').quantity,4);
+  console.log('PASS N/O: same-Product isolation and failed REMOVE preserves selected250');
 
   await reset(); await width(375); await diagnostic('ADD',0,1); await diagnostic('ADD',1,2);
   await openSheet(); await sheetSelect('100 г.'); await confirm();
@@ -322,7 +692,7 @@ try {
   assert.equal(await draft(), 2);
   await waitFor(`JSON.parse(document.querySelector('[data-testid="items"]').textContent).some(item => item.configuration.id === 'tea-50' && item.quantity === 3)`);
   assert.equal(await draft(), 2);
-  await sheetSelect('100 г.'); assert.equal(await draft(), 1);
+  await sheetSelect('100 г.'); assert.equal(await draft(), 0);
   await sheetSelect('50 г.'); assert.equal(await draft(), 3);
   await dismiss();
   console.log('PASS open draft snapshot vs external Cart update; explicit target switch reads latest state');
@@ -330,15 +700,17 @@ try {
   await openSheet(); await diagnostic('REMOVE', 0);
   assert.equal(await draft(), 3); await confirm(); assert.equal(await cartQuantity(), 3);
   await openSheet(); await sheetSelect('200 г.');
+  await draftTo(1);
   await diagnostic('ADD', 2, 2); assert.equal(await draft(), 1);
   await confirm(); assert.equal(await cartQuantity('tea-200'), 1); assert.equal(await cartQuantity(), 3);
   console.log('PASS Confirm rechecks current target: removed target ADDs, externally created target SETs');
 
   await openSheet('availability');
-  const disabledBefore = await draft();
-  await sheetSelect('200 г.'); assert.equal(await draft(), disabledBefore);
-  assert.equal(await evaluate(`document.querySelector('dialog button[aria-pressed="true"]').textContent`), '50 г.');
-  assert.equal(await evaluate(`document.querySelectorAll('dialog [aria-label="Выберите вес"] button:disabled').length`), 2);
+  await sheetSelect('200 г.'); assert.equal(await draft(), 0);
+  assert.equal(await evaluate(`document.querySelector('dialog button[aria-pressed="true"]').textContent`), '200 г.');
+  assert.equal(await evaluate(`document.querySelectorAll('dialog [aria-label="Выберите вес"] button:disabled').length`), 0);
+  assert.equal(await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').disabled`), true);
+  assert.equal(await evaluate(`document.querySelector('dialog button[aria-busy]').disabled`),true);
   for (let i = 0; i < 12; i++) {
     await key('Tab');
     const focus = await evaluate(`({ inside: document.querySelector('dialog').contains(document.activeElement), tag: document.activeElement.tagName, pageFocused: document.hasFocus() })`);
@@ -349,8 +721,8 @@ try {
   await width(1440);
   await cardClick('availability', 'button[aria-haspopup="listbox"]');
   await key('Home'); await key('ArrowDown'); await key('ArrowDown'); await key('Enter');
-  assert.equal(await evaluate(`${scope('availability')}.querySelector('button[aria-haspopup="listbox"]').textContent`), '50 г.');
-  console.log('PASS disabled configuration guards, keyboard skip and native modal focus containment');
+  assert.equal(await evaluate(`${scope('availability')}.querySelector('button[aria-haspopup="listbox"]').textContent`), '200 г.');
+  console.log('PASS unavailable inspection/keyboard selection, purchase guards and native modal focus containment');
 
   for (const viewport of [375, 414]) {
     await width(viewport); await openSheet();

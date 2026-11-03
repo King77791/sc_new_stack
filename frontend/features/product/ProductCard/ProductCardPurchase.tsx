@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useOptionalCart } from '@/features/cart/CartProvider';
 import type { ConfigurationKey, MutationResult, SuccessfulAdd } from '@/features/cart/cart.types';
 import { useNotification } from '@/components/Notification/NotificationProvider';
@@ -9,22 +9,26 @@ import { cartAddedEvent } from '@/components/Notification/notification.types';
 import type { ProductCardConfiguration, ProductCardData, ProductCardPresentation } from './ProductCard.types';
 import styles from './ProductCard.module.css';
 import { ProductPurchaseSheet } from './ProductPurchaseSheet';
+import { createPendingFeedback } from './pending-feedback';
+import { sheetConfirmAction } from './purchase-sheet-draft';
+import { captureFocusOwnership } from '@/lib/focus-ownership';
+import { normalizeConfigurations, canRequestQuantity } from './configuration-contract';
 
-function ConfigurationControl({ options, selected, onSelect }: Readonly<{
+function ConfigurationControl({ options, selected, onSelect, triggerRef: trigger }: Readonly<{
   options: readonly ProductCardConfiguration[];
   selected: ProductCardConfiguration;
   onSelect: (option: ProductCardConfiguration) => void;
+  triggerRef: RefObject<HTMLButtonElement | null>;
 }>) {
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | undefined>(selected.id);
-  const enabledOptions = options.filter(option => !option.disabled);
+  const enabledOptions = options;
   const activeOption = enabledOptions.find(option => option.id === activeId)
     ?? enabledOptions.find(option => option.id === selected.id);
   const active = options.findIndex(option => option.id === activeOption?.id);
   const enabledIndex = enabledOptions.findIndex(option => option.id === activeOption?.id);
   if (activeId !== activeOption?.id) setActiveId(activeOption?.id);
   const root = useRef<HTMLDivElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const id = useId();
   useEffect(() => {
@@ -37,7 +41,7 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
     return () => document.removeEventListener('pointerdown', outside);
   }, [open]);
   const close = () => { setOpen(false); trigger.current?.focus(); };
-  const choose = (option: ProductCardConfiguration | undefined) => { if (!option || option.disabled) return; onSelect(option); close(); };
+  const choose = (option: ProductCardConfiguration | undefined) => { if (!option) return; onSelect(option); close(); };
   const show = () => { setActiveId(selected.id); setOpen(true); };
   return (
     <div className={styles.weightControl} ref={root} onBlur={(event) => {
@@ -67,9 +71,9 @@ function ConfigurationControl({ options, selected, onSelect }: Readonly<{
           }}>
           {options.map((option, index) => (
             <li key={option.id} id={`${id}-${index}`} role="option"
-              aria-selected={!option.disabled && option.id === selected.id} aria-disabled={option.disabled || undefined}
-              data-active={!option.disabled && index === active}
-              onPointerMove={() => { if (!option.disabled) setActiveId(option.id); }} onClick={() => choose(option)}>{option.label}</li>
+              aria-selected={option.id === selected.id} aria-label={`${option.label}${option.disabled ? ', Нет в наличии' : ''}`}
+              data-unavailable={option.disabled || undefined} data-active={index === active}
+              onPointerMove={() => setActiveId(option.id)} onClick={() => choose(option)}>{option.label}</li>
           ))}
         </ul>
       )}
@@ -88,56 +92,105 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
   const cart = useOptionalCart();
   const notify = useNotification();
   const preorder = data.purchasePresentation === 'preorder';
-  const options = !preorder && data.weight?.presentation === 'selectable' ? data.weight.configurations : undefined;
-  // An unavailable initial configuration needs an explicit API/business decision, not a UI fallback.
-  const [selectedId, setSelectedId] = useState(options?.find(option => option.label === data.weight?.label && !option.disabled)?.id);
-  const selected = options?.find(option => option.id === selectedId && !option.disabled);
+  const options = !preorder && data.weight?.presentation === 'selectable' ? normalizeConfigurations(data.weight.configurations) : undefined;
+  const latestOptions = useRef(options);
+  latestOptions.current = options;
+  const [selectedId, setSelectedId] = useState(options?.find(option => option.weightGrams === 50)?.id);
+  const selectionIntent = useRef(0);
+  const lifecycle = useRef(0);
+  const commitSelection = (id: string) => { selectionIntent.current += 1; setSelectedId(id); };
+  const selected = options?.find(option => option.id === selectedId);
   const configuration: ConfigurationKey | undefined = options
     ? selected && { kind: 'selectable', id: selected.id }
     : { kind: 'fixed' };
   const quantity = configuration ? cart?.getQuantity(productKey, configuration) ?? 0 : 0;
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState<'compact' | 'full' | null>(null);
   const sheetSession = useRef(0);
   const mutationPending = useRef(false);
   const [pending, setPending] = useState(false);
+  const [pendingVisible, setPendingVisible] = useState(false);
+  const pendingFeedback = useRef<ReturnType<typeof createPendingFeedback> | null>(null);
+  const [selectionTransition, setSelectionTransition] = useState(false);
+  const confirmedControls = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const feedback = createPendingFeedback(setPendingVisible);
+    pendingFeedback.current = feedback;
+    return () => { feedback.dispose(); pendingFeedback.current = null; };
+  }, []);
+  useEffect(() => {
+    if (!selectionTransition) return;
+    let current = true;
+    // Also clear the occurrence when motion is reduced or compact controls are hidden.
+    const animations = confirmedControls.current?.getAnimations() ?? [];
+    void Promise.allSettled(animations.map(animation => animation.finished)).then(() => {
+      if (current) setSelectionTransition(false);
+    });
+    return () => { current = false; };
+  }, [selectionTransition]);
   const price = selected?.price ?? data.price;
   const trigger = useRef<HTMLButtonElement>(null);
   const fullAction = useRef<HTMLButtonElement>(null);
+  const fullSelection = useRef<HTMLButtonElement>(null);
   const compactPlus = useRef<HTMLButtonElement>(null);
-  const quantityAction = useRef<'add' | 'remove' | null>(null);
+  const compactMinus = useRef<HTMLButtonElement>(null);
+  const quantityAction = useRef<{
+    kind: 'add' | 'remove' | 'minus' | 'plus';
+    focus: ReturnType<typeof captureFocusOwnership>;
+  } | null>(null);
+  useEffect(() => () => {
+    lifecycle.current += 1;
+    selectionIntent.current += 1;
+    sheetSession.current += 1;
+    quantityAction.current?.focus.dispose();
+    quantityAction.current = null;
+  }, []);
   const sheetId = useId();
   useEffect(() => {
     if (pending) return;
-    if (quantityAction.current === 'add') compactPlus.current?.focus();
-    if (quantityAction.current === 'remove') trigger.current?.focus();
+    const action = quantityAction.current;
     quantityAction.current = null;
+    if (!action?.focus.release()) return;
+    const preferred = action.kind === 'add' || action.kind === 'plus' ? compactPlus.current
+      : action.kind === 'minus' ? compactMinus.current : quantity > 0 ? compactMinus.current : trigger.current;
+    [preferred, trigger.current, fullAction.current].find(control =>
+      control?.isConnected && !control.disabled && control.getClientRects().length)?.focus();
   }, [quantity, pending]);
   const openSheet = (event: { currentTarget: HTMLButtonElement }) => {
-    if (!mutationPending.current && cart && options && selected && !preorder) { sheetSession.current += 1; trigger.current = event.currentTarget; setSheetOpen(true); }
+    if (!mutationPending.current && cart && options && selected && !preorder) {
+      sheetSession.current += 1;
+      if (event.currentTarget !== fullAction.current) trigger.current = event.currentTarget;
+      setSheetOpen(event.currentTarget === fullAction.current ? 'full' : 'compact');
+    }
   };
-  const closeSheet = () => { sheetSession.current += 1; setSheetOpen(false); };
+  const closeSheet = () => { sheetSession.current += 1; setSheetOpen(null); };
   const changeInline = (option: ProductCardConfiguration) => {
-    if (option.disabled) return;
-    if (option.id !== selected?.id) setSelectedId(option.id);
+    commitSelection(option.id);
   };
   const snapshot = (option?: ProductCardConfiguration) => ({
     slug: data.slug, title: data.title, configurationLabel: option?.label ?? data.weight?.label,
   });
-  const mutate = async <T,>(operation: () => Promise<MutationResult<T>>, focus: 'add' | 'remove' | null = null) => {
+  const mutate = async <T,>(operation: () => Promise<MutationResult<T>>, focus: 'add' | 'remove' | 'minus' | 'plus' | null = null) => {
     if (mutationPending.current) return;
+    const owner = lifecycle.current;
     mutationPending.current = true;
-    quantityAction.current = focus;
+    quantityAction.current?.focus.dispose();
+    quantityAction.current = focus ? { kind: focus, focus: captureFocusOwnership(
+      focus === 'add' ? trigger.current : focus === 'plus' ? compactPlus.current : compactMinus.current,
+    ) } : null;
+    setSelectionTransition(false);
+    if (!sheetOpen) pendingFeedback.current?.start();
     setPending(true);
     try {
       const result = await operation();
-      if (!result.ok) quantityAction.current = null;
+      if (!result.ok) { quantityAction.current?.focus.dispose(); quantityAction.current = null; }
       return result;
     } catch {
-      quantityAction.current = null;
+      quantityAction.current?.focus.dispose(); quantityAction.current = null;
       return undefined;
     } finally {
       mutationPending.current = false;
-      setPending(false);
+      pendingFeedback.current?.finish();
+      if (owner === lifecycle.current) setPending(false);
     }
   };
   const reportAdd = async (operation: Promise<MutationResult<SuccessfulAdd>>) => {
@@ -147,15 +200,34 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
   };
   const add = (focus: 'add' | null = null) => {
     if (!cart || !configuration || preorder) return;
+    if (configuration.kind === 'selectable' && !latestOptions.current?.some(option => option.id === configuration.id && !option.disabled)) return;
     return mutate(() => reportAdd(cart.addItem({ productKey, configuration, quantity: 1, presentation: snapshot(selected) })), focus);
+  };
+  const selectAfterRemoval = (removedId: string) => {
+    // Canonical ascending options, intersected with the latest same-Product Cart state.
+    const remaining = latestOptions.current && [...latestOptions.current].reverse().find(option =>
+      cart?.getItem(productKey, { kind: 'selectable', id: option.id }));
+    commitSelection(remaining?.id ?? removedId);
+    return Boolean(remaining);
   };
   const changeQuantity = (delta: -1 | 1) => {
     if (!cart || !configuration || preorder || mutationPending.current) return;
     const item = cart.getItem(productKey, configuration);
     if (!item) return;
+    if (configuration.kind === 'selectable') {
+      const current = latestOptions.current?.find(option => option.id === configuration.id);
+      if (!current || !canRequestQuantity(current, item.quantity, item.quantity + delta)) return;
+    }
+    const intent = selectionIntent.current;
     return delta === -1 && item.quantity === 1
-      ? mutate(() => cart.removeItem(item.id), 'remove')
-      : mutate(() => cart.setItemQuantity(item.id, item.quantity + delta));
+      ? mutate(async () => {
+        const result = await cart.removeItem(item.id);
+        if (result.ok && intent === selectionIntent.current && options && configuration.kind === 'selectable' && !cart.getItem(productKey, configuration)) {
+          if (selectAfterRemoval(configuration.id)) setSelectionTransition(true);
+        }
+        return result;
+      }, 'remove')
+      : mutate(() => cart.setItemQuantity(item.id, item.quantity + delta), delta === -1 ? 'minus' : 'plus');
   };
   return (
     <>
@@ -173,17 +245,20 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
           {data.weight && <span className={`${styles.weight} ${styles.compactOnly}`}><span className={styles.srOnly}>Вес: </span>{data.weight.label}</span>}
         </> : selected && options ? <>
           <div className={styles.fullOnly} style={{ display: 'contents' }}>
-            <ConfigurationControl options={options} selected={selected} onSelect={changeInline} />
+            <ConfigurationControl options={options} selected={selected} onSelect={changeInline} triggerRef={fullSelection} />
           </div>
           <span className={`${styles.weight} ${styles.compactOnly}`}><span className={styles.srOnly}>Вес: </span>{selected.label}</span>
         </> : data.weight ? <span className={styles.weight}><span className={styles.srOnly}>Вес: </span>{data.weight.label}</span> : null}
       </div>
       {price.discount && <span className={styles.discountBadge}>{price.discount.label}</span>}
+      {selected?.disabled && <span className={styles.availabilityStatus}>Нет в наличии</span>}
       {preorder ? <div className={`${styles.preorderBar} ${styles.compactOnly}`}>Предзаказ</div> : <>
         <button ref={fullAction} className={`${styles.cart} ${styles.fullOnly} ${quantity > 0 ? styles.cartAdded : ''}`} type="button"
-          disabled={!cart || pending || Boolean(options && !selected)}
-          aria-label={`${quantity > 0 ? `Добавить ещё, выбрано ${quantity}` : 'В корзину'}: ${data.title}`}
-          onClick={() => void add()}>
+          disabled={!cart || pending || Boolean(options && !selected) || Boolean(selected?.disabled && quantity === 0)}
+          aria-label={`${selected?.disabled && quantity > 0 ? `Управлять количеством, выбрано ${quantity}` : quantity > 0 ? `Добавить ещё, выбрано ${quantity}` : 'В корзину'}: ${data.title}`}
+          aria-haspopup={selected?.disabled && quantity > 0 ? 'dialog' : undefined}
+          aria-controls={selected?.disabled && sheetOpen ? sheetId : undefined}
+          onClick={selected?.disabled && quantity > 0 ? openSheet : () => void add()}>
           {quantity > 0 ? <span className={styles.filledCartIcon} aria-hidden="true">
             <Image className={styles.cartBody} src="/icons/product/cart-filled-body.svg" alt="" width={24} height={25} />
             <Image className={styles.cartOutline} src="/icons/product/cart-filled-outline.svg" alt="" width={29} height={35} />
@@ -191,15 +266,18 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
           </span> : <span className={styles.cartIcon}><Image src="/icons/product/cart.svg" alt="" width={25} height={31} /></span>}
           <span className={styles.srOnly} role="status">{quantity > 0 ? `В корзине: ${quantity}` : ''}</span>
         </button>
-        {quantity > 0 ? <div className={`${styles.purchaseControls} ${styles.compactOnly}`}>
+        <div className={`${styles.purchaseSurface} ${styles.compactOnly}`} aria-busy={pending}
+          data-pending-visible={pendingVisible || undefined}>
+        {quantity > 0 ? <div ref={confirmedControls} className={`${styles.purchaseControls} ${selectionTransition ? styles.selectionEnter : ''}`}>
           <div className={styles.quantityBar} role="group" aria-label={`Количество: ${data.title}`}>
-            <button type="button"
+            <button ref={compactMinus} type="button"
               disabled={pending}
               aria-label="Уменьшить количество"
               onClick={() => void changeQuantity(-1)}><Image src="/icons/product/quantity-minus.svg" alt="" width={14} height={2} /></button>
             <span role="status">{quantity}</span>
             <button ref={compactPlus} type="button"
-              disabled={pending}
+              className={selected?.disabled ? styles.unavailableIncrease : undefined}
+              disabled={pending || selected?.disabled}
               aria-label="Увеличить количество"
               onClick={() => void changeQuantity(1)}>
               <Image src="/icons/product/quantity-plus.svg" alt="" width={12} height={12} />
@@ -213,26 +291,42 @@ export function ProductCardPurchase({ productKey, data, presentation, children }
           </button>}
         </div> : <button ref={trigger} type="button" className={`${styles.cart} ${styles.compactOnly}`}
           disabled={!cart || pending || Boolean(options && !selected)}
-          aria-label={`${options ? 'Добавить в корзину' : 'В корзину'}: ${data.title}`}
+          aria-label={`${selected?.disabled ? 'Выбрать фасовку' : options ? 'Добавить в корзину' : 'В корзину'}: ${data.title}`}
           aria-haspopup={options ? 'dialog' : undefined} aria-controls={sheetOpen ? sheetId : undefined}
           onClick={options ? openSheet : () => void add('add')}>
-          <span>В корзину</span><span className={styles.cartIcon}><Image src="/icons/product/cart.svg" alt="" width={25} height={31} /></span>
+          <span>{selected?.disabled ? 'Выбрать фасовку' : 'В корзину'}</span><span className={styles.cartIcon}><Image src="/icons/product/cart.svg" alt="" width={25} height={31} /></span>
         </button>}
+        {pendingVisible && <span className={styles.pendingOverlay} aria-hidden="true"><span className={styles.pendingSpinner} /></span>}
+        </div>
       </>}
       {sheetOpen && cart && selected && options && !preorder && <ProductPurchaseSheet id={sheetId} title={data.title}
-        options={options} initialConfiguration={selected} initialQuantity={quantity > 0 ? quantity : 1}
-        getTargetQuantity={option => cart.getQuantity(productKey, { kind: 'selectable', id: option.id }) || 1}
-        responsive={presentation === 'responsive'} triggerRef={trigger} fallbackRef={fullAction}
-        onCancel={closeSheet} onConfirm={async (option, amount) => {
-          if (!options.some(current => current.id === option.id && !current.disabled)) return false;
+        options={options} initialConfiguration={selected} initialQuantity={quantity}
+        getTargetQuantity={option => cart.getQuantity(productKey, { kind: 'selectable', id: option.id })}
+        responsive={presentation === 'responsive' && sheetOpen === 'compact'} triggerRef={trigger} fallbackRef={selected.disabled && quantity === 0 ? fullSelection : fullAction}
+        onCancel={closeSheet} onConfirm={async (option, amount, removalIntent) => {
+          const current = latestOptions.current?.find(current => current.id === option.id);
+          if (!current) return false;
           const session = sheetSession.current;
+          const intent = selectionIntent.current;
           const target = { kind: 'selectable' as const, id: option.id };
           const item = cart.getItem(productKey, target);
+          if (!canRequestQuantity(current, item?.quantity ?? 0, amount)) return false;
+          const action = sheetConfirmAction(amount, removalIntent, Boolean(item));
+          if (action === 'none') return false;
+          if (current.disabled && item && amount === item.quantity) {
+            commitSelection(current.id); closeSheet(); return true;
+          }
+          if (action === 'remove' || action === 'absent') {
+            const result = item ? await mutate(() => cart.removeItem(item.id)) : { ok: true };
+            if (!result?.ok || session !== sheetSession.current || intent !== selectionIntent.current || cart.getItem(productKey, target)) return false;
+            selectAfterRemoval(option.id); closeSheet();
+            return true;
+          }
           const result = item
             ? await mutate(() => cart.setItemQuantity(item.id, amount))
             : await mutate(() => reportAdd(cart.addItem({ productKey, configuration: target, quantity: amount, presentation: snapshot(option) })));
-          if (!result?.ok || session !== sheetSession.current) return false;
-          setSelectedId(option.id); closeSheet();
+          if (!result?.ok || session !== sheetSession.current || intent !== selectionIntent.current) return false;
+          commitSelection(option.id); closeSheet();
           return true;
         }} />}
     </>

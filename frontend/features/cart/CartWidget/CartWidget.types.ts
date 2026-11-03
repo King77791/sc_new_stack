@@ -1,4 +1,4 @@
-/** Presentation inputs only. Prices and availability belong to the future Cart layer. */
+/** Presentation inputs only: prepared Cart values and a separately supplied Product availability status. */
 export type CartWidgetItemData = Readonly<{
   /** Opaque CartItem identity, including its Purchase Configuration. */
   id: string;
@@ -10,9 +10,11 @@ export type CartWidgetItemData = Readonly<{
   /** Configuration of ONE unit; never multiplied by quantity. */
   configurationLabel?: string;
   quantity: number;
+  /** From the current product-input snapshot, independently of Cart quantity/pricing. */
+  unavailable?: boolean;
 }>;
 
 export type CartWidgetProps = Readonly<{
   items: readonly CartWidgetItemData[];
-  onRemoveItem: (itemId: string) => void;
+  onRemoveItem: (itemId: string) => void | Promise<boolean | void>;
 }>;

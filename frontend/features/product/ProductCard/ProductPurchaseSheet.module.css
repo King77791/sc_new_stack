@@ -21,6 +21,7 @@
 .sheet::backdrop { background: transparent; }
 .sheet button { font-family: inherit; cursor: pointer; }
 .sheet button:disabled { cursor: default; }
+.quantity button:disabled, .confirm:disabled { opacity: .35; cursor: not-allowed; }
 .sheet button:focus-visible { outline: 2px solid var(--color-cream-gold); outline-offset: 2px; }
 .header { position: relative; padding: 7px 15px; display: flex; flex-direction: column; align-items: center; gap: 8px; backdrop-filter: blur(9px); }
 .topControls { position: relative; width: 100%; height: 44px; flex: 0 0 44px; margin: -7px 0 -9px; }
@@ -36,6 +37,8 @@
 .options { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 7px; width: 100%; padding: 4px 0; }
 .options button { min-width: 0; height: 40px; padding: 8px 4px; border: 2px solid rgb(255 255 255 / 10%); border-radius: 8px; background: #2a403a; color: rgb(255 255 255 / 80%); font-size: 20px; line-height: 20px; }
 .options button[aria-pressed='true'] { border-color: var(--color-cream-gold); }
+.options [data-unavailable] { color: rgb(255 255 255 / 55%); }
+.availabilityStatus { display: block; color: var(--color-cream-gold); font-size: 11px; line-height: 14px; font-weight: 400; }
 .options button:disabled { opacity: .35; cursor: not-allowed; }
 .actions { display: flex; align-items: center; gap: 8px; padding: 0 15px; }
 .quantity { display: flex; align-items: center; flex: 0 0 160px; height: 48px; }

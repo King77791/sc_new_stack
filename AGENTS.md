@@ -620,15 +620,19 @@ Legacy `productYear` соответствует году урожая там, г
 
 Стандартный weight-based Tea имеет ровно четыре canonical Purchase Configurations
 в порядке `50 г.` / `100 г.` / `200 г.` / `250 г.`; labels отображаются с пробелом
-перед `г.` и точкой. Это стабильные четыре UI slots: insufficient stock не удаляет
-configuration, unavailable option остаётся visible и disabled, не выбирается мышью,
-touch или keyboard и не меняет configuration/price/quantity. Full selector и compact
-Bottom Sheet используют одну availability model. Backend определяет availability
-каждой configuration; frontend не вычисляет её из raw stock. До API допустим только
-явный presentation disabled flag в fixtures, без stock calculation или backend DTO.
-Default — первая canonical configuration; если она unavailable, правило initial
-selection/fallback требует отдельного API/business решения: не выбирать disabled
-option и не придумывать автоматическую замену. Это правило не применяется к
+перед `г.` и точкой. Identity стабильна и независима от display label и array index.
+Input boundary проверяет ровно четыре slots, unique IDs и canonical labels; порядок
+нормализуется по явной nominal-weight metadata. Missing/extra slots, duplicate identity
+или weight и label mismatch отклоняются, без выдумывания identity. Initial selection
+опирается на identity canonical 50 г., а не на display label.
+Unavailable configuration остаётся visible и selectable для inspection, включая default.
+Availability не определяет existence configuration или CartItem и не сбрасывает selection
+или canonical quantity. Она запрещает ADD/increase, но допускает decrease/REMOVE existing
+CartItem; равное actual quantity не требует mutation. Zero остаётся UI-only, SET0 запрещён.
+Full selector и Sheet используют одну модель; недоступность явно обозначается «Нет в наличии».
+Backend определяет authoritative availability; frontend не вычисляет её из raw stock.
+До API допустим явный presentation disabled flag: это purchase restriction, не запрет navigation.
+Это правило не применяется к
 fixed-weight Tea, Ceramics и другим non-weight-configurable товарам.
 
 #### Fixed-weight piece products
@@ -1123,7 +1127,8 @@ Backend/data model должен иметь один авторитетный rel
 Cart является отдельной domain area и не является локальным
 представлением Product.
 
-Cart должен быть server-authoritative.
+Cart должен быть server-authoritative после подключения backend. Это утверждённое
+требование к commerce truth, а не описание уже существующей интеграции.
 
 Frontend может использовать optimistic/local state для UX только
 при условии последующей серверной валидации.
@@ -1139,8 +1144,16 @@ Backend является источником истины для:
 - delivery-related totals;
 - возможности оформления заказа.
 
-До появления Cart/API разрешено только необходимое локальное
-presentation/interactivity behavior для тестирования ProductCard.
+Реализован общий in-memory CartProvider: canonical frontend Cart для confirmed
+quantities, immutable ADD/SET/REMOVE и нескольких configurations одного Product.
+Quantity — positive safe integer; quantity0 CartItem и SET0 запрещены. Identity —
+Product + Purchase Configuration, локальный opaque ID — structured JSON tuple;
+productKey=slug является временной frontend boundary, не backend canonical_product_id.
+Provider публикует latest local snapshot до возврата mutation success; это не
+утверждённая гарантия publication/revision будущего async backend (F4).
+Client navigation/consumer remount сохраняют Cart в пределах Provider; его remount,
+reload или новая session сбрасывают Cart. До API это frontend-only interactivity,
+не серверное подтверждение stock, цены или возможности Checkout.
 Не создавать fake Cart API, localStorage Cart, фиктивную server
 persistence или frontend-authoritative commerce logic.
 
@@ -1170,6 +1183,9 @@ persistence или frontend-authoritative commerce logic.
 ---
 
 ### 8.29. Changing Weight Inside Cart
+
+Утверждённое business requirement для будущего Basket editor. Atomic transfer/merge
+не реализован (F1); ProductPurchaseSheet редактирует один target, не переносит source line.
 
 Пользователь должен иметь возможность изменить выбранный вес
 весового Product непосредственно в корзине.
@@ -1503,13 +1519,13 @@ domain semantics.
   при implementation с сохранением указанного mouse behavior. Compact
   использует собственное title behavior без автоматического переноса
   desktop hover-marquee на touch.
-- Weight-based Tea в full presentation позволяет выбрать доступную
-  Purchase Configuration прямо в карточке, без перехода на Product Page.
+- Weight-based Tea в full presentation позволяет выбрать Purchase Configuration
+  для inspection прямо в карточке, независимо от purchase eligibility.
   При выборе configuration немедленно меняются selected configuration
   и display price на готовое значение для неё.
   Default, canonical labels/slots и unavailable state следуют правилу 8.10;
   initial display price и discount соответствуют default configuration.
-  Будущий backend предоставляет availability и initial selection.
+  Будущий backend предоставляет authoritative availability после сопоставления API contract.
   Dropdown открывается вверх без изменения размеров карточки; arrow
   отражает open/closed state с учётом prefers-reduced-motion.
 - В compact weight не является интерактивным control: например `50 г`
@@ -1563,8 +1579,8 @@ Unified Responsive Architecture + Compact Purchase Bottom Sheet и Final Fix Gat
 Full сохраняет inline configuration selector, готовую цену выбранной configuration
 и Cart interaction в карточке. Compact CTA «Добавить в корзину» для selectable
 товара открывает Bottom Sheet, не добавляя товар напрямую. В панели пользователь
-идентифицирует товар, видит актуальную готовую цену, выбирает доступную configuration,
-меняет quantity и подтверждает добавление. Закрытая compact card сохраняет
+идентифицирует товар, видит готовую цену и выбирает configuration для inspection,
+меняет quantity и подтверждает ADD/SET либо явное REMOVE. Закрытая compact card сохраняет
 информационное представление веса без desktop selector. Этот вес не обязательно
 равен окончательной configuration, выбранной для Cart.
 
@@ -1587,13 +1603,15 @@ matchMedia для выбора всей карточки. Resize сам по с�
 не должен молча терять выбранную configuration. Full selection может стать initial
 selection панели; пользователь всё равно выбирает/подтверждает weight и quantity.
 Неподтверждённые configuration и quantity панели остаются transient: любой dismissal,
-включая responsive compact → full, отбрасывает draft и сохраняет последнее confirmed state.
+включая responsive compact → full для панели, открытой из compact, отбрасывает draft
+и сохраняет последнее confirmed state. Full unavailable existing management Sheet
+разрешена на desktop и не закрывается только из-за full viewport.
 
 Bottom Sheet — interactive Client Component: open/close, draft configuration и
 quantity, confirmation и modal lifecycle. Требуются dialog semantics/name, focus
 transfer, keyboard navigation, Escape, возврат focus к доступному trigger, отсутствие
 focus вне открытого modal, корректные overlay и scroll behavior. При переходе к full
-открытая панель закрывается с cleanup overlay/focus trap/body scroll lock; скрытого
+панель, открытая из responsive compact, закрывается с cleanup overlay/focus trap/body scroll lock; скрытого
 открытого dialog state оставаться не должно. Узкая media-aware lifecycle logic в
 purchase island допустима для этого cleanup, а не для выбора layout всей карточки.
 
@@ -1607,12 +1625,23 @@ fixed, responsive переключается только CSS на 1280 px (ни
 server-first ProductCard содержит по одному title/image/Country/Mood subtree,
 Favorite island и purchase UI owner. Cart — canonical source of truth для confirmed
 purchase quantity; локальное состояние карточки хранит selection, не confirmed quantity.
-Inline смена configuration меняет только selection. Bottom Sheet владеет только draft:
-при открытии и явном переключении target configuration загружается её Cart quantity,
-либо 1 при отсутствии строки. Внешние Cart updates не переписывают текущий draft.
-Confirm существующего target выполняет SET, отсутствующего — ADD; другие configurations
-не изменяются. Только successful Confirm фиксирует выбранный target; Cancel, Escape,
-swipe и переход responsive → full отбрасывают draft. Fixed-weight Tea/Ceramics сохраняют прямой
+Inline смена configuration меняет только selection. Bottom Sheet — single-current-target
+editor: при открытии и переключении target загружается canonical Cart quantity либо 0
+при отсутствии строки. Zero существует только в UI draft; CartItem.quantity строго >0,
+SET 0 запрещён. Switching/reopen перечитывает canonical Cart и отбрасывает unconfirmed
+draft и removal intent, без per-configuration draft map. Внешние Cart updates не
+переписывают текущий draft. Untouched missing0 не является REMOVE intent и никогда
+не разрешает удалить externally created CartItem; Confirm в этом состоянии disabled.
+Явный user decrement существовавшего в текущем editing context target до0 выражает
+REMOVE intent; возврат к positive draft отменяет его. Confirm перечитывает actual target:
+positive draft выполняет ADD для missing или absolute SET для existing; explicit zero
+выполняет REMOVE для existing либо успешно завершает уже достигнутое отсутствие без
+mutation. Другие configurations не изменяются. Successful ADD/SET фиксирует выбранный
+target; successful Sheet REMOVE использует Highest Remaining Configuration того же
+Product, как direct compact REMOVE, либо возвращает карточку в initial CTA.
+Confirm label соответствует ADD/SET/REMOVE. Cancel, Escape,
+swipe и переход responsive compact → full отбрасывают draft открытой compact Sheet.
+Fixed-weight Tea/Ceramics сохраняют прямой
 compact action без Sheet и фиктивного selector; preorder исключён из Cart flow.
 
 Sheet использует native modal dialog с transparent backdrop, без backdrop click-dismiss.
@@ -1627,39 +1656,83 @@ current selected configuration и никогда не открывают Sheet. 
 выполняет REMOVE, не SET 0. Отдельная purchase-management button с существующей
 shopping-bag semantics открывает ProductPurchaseSheet; empty selected state сохраняет CTA.
 Displayed quantity относится к selected configuration, не aggregate Product quantity.
-REMOVE не auto-select другую configuration: если другие CartItems остаются, selected
-configuration сохраняется, а её карточка возвращается к CTA. Все confirmed quantities
-получаются из canonical Cart; target перечитывается при действии, исчезнувший target
-не заменяется другой configuration. Increment/decrement/REMOVE не создают Notification;
+Пока selected CartItem существует, selection пользователя стабильна и автоматически
+не меняется без явного user action. После явного successful REMOVE через direct compact
+control или Sheet Confirm, если у Product остаются другие CartItems, selected становится
+Purchase Configuration с наибольшим
+canonical weight среди оставшихся CartItems этого Product. Если CartItems Product
+больше нет, карточка возвращается в initial CTA state. Selection не определяется Cart
+insertion history, quantity, global Cart или nearest/next/previous configuration.
+Generic auto-selection по selectedQuantity===0 запрещён: initial state, external mutation
+и reconciliation сами по себе не меняют selection. Все confirmed quantities получаются
+из canonical Cart; target перечитывается при действии, исчезнувший target не заменяется
+другой configuration при попытке mutation. После direct REMOVE с remaining configuration
+focus переходит на минус нового confirmed state; при empty Product — на initial CTA.
+После Sheet Confirm focus возвращается к доступной management button либо initial CTA
+по существующему modal focus contract, только при сохранённом interaction ownership.
+Direct REMOVE focus fallback выше также требует сохранённого ownership.
+Cart mutations имеют локальный pending spinner в compact purchase controls после
+120ms, без задержки mutation/canonical update и без minimum spinner duration.
+Successful direct REMOVE со сменой representative configuration использует короткий
+opacity enter transition 180ms. Loading overlay всей карточки не вводится.
+Animation не является source of truth; feedback учитывает reduced motion и не меняет focus contract.
+Availability & Identity v1.0: selected configuration определяется по identity независимо
+от availability. Highest Remaining включает unavailable existing CartItems. Existing
+unavailable compact state сохраняет stepper с доступным minus и disabled plus; full Cart
+control позволяет открыть Sheet для decrease/REMOVE, без ADD. Unavailable absent можно
+инспектировать в Sheet с draft0 и disabled purchase controls.
+Sheet хранит target identity и проверяет current Product input availability и actual Cart
+quantity при Confirm. Stale draft не разрешает increase или ADD unavailable target;
+explicit removal intent и безопасное achieved absence сохраняются.
+Widget представляет unavailable existing строку с quantity, configuration и текстовым
+статусом, сохраняя REMOVE enabled. Availability приходит отдельным current Product input,
+не из CartItem presentation snapshot и не из quantity/stock. Обновляющий input owner должен
+передавать актуальный snapshot consumers; frontend fixtures/props не являются live backend truth.
+В production composition RootLayout пока передаёт Widget projection из product fixtures;
+Card/Sheet получают frontend Product props. Live backend synchronization отсутствует.
+Unavailable CartItem сохраняется как user intent; final Checkout требует будущей
+authoritative server validation и не разрешается автоматически текущим frontend guard.
+Async UI intent: canonical mutation success и право на UI completion различаются.
+Более новый explicit configuration selection отменяет право старого completion менять
+selection и запускать связанный selection transition, без rollback canonical mutation.
+Highest Remaining применяется только если REMOVE completion всё ещё владеет relevant
+selection intent; external Cart updates не создают generic selection repair.
+Focus ownership: async completion восстанавливает focus только при сохранённом interaction
+ownership. Более новый explicit focus, включая другой control того же Widget, не должен
+перехватываться старым completion. Если origin исчез или потерял focus из-за disabled
+lifecycle, при сохранённом ownership используется доступный deterministic fallback.
+Increment/decrement/REMOVE не создают Notification;
 successful ADD через CTA/Sheet сохраняет существующий feedback contract. Для fixed/direct
 товаров прямой stepper сохраняется без purchase-management button; preorder не меняется.
 Scroll lock действует только при открытии; matchMedia listener
 существует только у открытой responsive Sheet для cleanup на full. Focus возвращается
-на видимый compact trigger, при его скрытии — на full Cart action этой карточки.
+на видимый enabled compact trigger, при его скрытии — на full Cart action этой карточки,
+а при disabled unavailable empty action — на full configuration selector, с ownership guard.
 Готовые prices/options берутся из данных; reference label — label configuration,
 без price calculation и выдуманного stock/max quantity. Backend Cart отсутствует.
 
 Статус: **ProductCard — READY / FROZEN 🔒**.
 Final Incremental Review / Final Fix Gate завершены. Five-options finding закрыт:
 NOT APPLICABLE — violates approved four-weight contract. Это не разрешение
-продолжать ProductGrid/ProductShelf/Home или начинать Cart architecture.
+продолжать ProductGrid/ProductShelf/Home или начинать Basket/backend integration.
 
 ### Implementation details / Open / Future
 
 Desktop/tablet/mobile могут перестраивать расположение элементов,
 regional presentation, Mood visibility, actions, typography и размеры.
-Точные размеры/positioning уточняются по Figma; окончательные responsive
-breakpoints и animation/accessibility implementation не утверждены.
+Текущие geometry, breakpoint 1280 px, motion и accessibility реализованы и frozen;
+изменения UI требуют отдельного scope и проверки Figma.
 Figma остаётся visual source of truth с утверждёнными уточнениями
 раздела 21.6; отдельные domain components для desktop/mobile не вводятся.
 
-Favorite и Cart mock interactions ограничены разделами 8.23 и 8.27;
-Notification system и отдельный desktop/tablet Cart Widget — будущие
-задачи вне текущего ProductCard implementation scope.
-Compact/mobile Cart допускает только минимальное локальное testing
-согласно 8.27. Compact purchase Bottom Sheet имеет утверждённый UX contract выше;
-его реализация описана выше и принята после Manual Review / Final Fix Gate. Это не
-разрешает реализацию отдельного Cart Widget или имитацию backend synchronization.
+Favorite остаётся local UI state без canonical Favorite Domain (8.23).
+CartProvider, ProductPurchaseSheet, desktop CartWidget, Notification и Header Cart
+Indicator уже интегрированы; см. 8.27, 24–26 и docs/product-card-cart-integration.md,
+docs/cart-domain.md, docs/cart-widget-integration.md. ProductCard/Sheet/Widget — READY / FROZEN.
+Backend Cart, network retries/idempotency и authoritative Checkout validation отсутствуют.
+Открыты F1 (atomic Basket transfer/merge), F4 (async backend publication/postconditions),
+F7 (direct/Widget error feedback), F8 (browser QA/private React internals).
+Documentation reconciliation F9 не закрывает эти findings и не разрешает следующий gate.
 ProductCard API DTO, реальные Cart/Favorite endpoints и окончательные
 backend validation/error contracts не утверждены.
 
@@ -2534,8 +2607,9 @@ Model (8) и Incremental Code Review (20).
 Presentation подключена к canonical Cart через отдельный adapter/consumer в shared shell.
 Persistent Client Provider принимает server-composed children без дополнительного layout box;
 root layout остаётся Server Component. Текущий Cart in-memory frontend-only, без persistence
-и API; backend остаётся будущим источником commerce truth. Не реализовывать Header active
-indicator, Basket/Notification или ProductGrid без отдельного scope. Frozen features сохраняют свои ограничения,
+и API; backend остаётся будущим источником commerce truth. Header Cart Indicator и
+Notification уже интегрированы (25–26); Basket и новые изменения ProductGrid требуют
+отдельного scope. Frozen features сохраняют свои ограничения,
 кроме явно разрешённой targeted Footer CSS integration delta ниже.
 
 ### 24.1. Presentation и state ownership
@@ -2553,7 +2627,10 @@ Widget нельзя dismiss, пока есть позиции. Count button и �
 разные configurations одного Product представлены разными стабильными item IDs.
 
 Presentation API: `items`, `onRemoveItem(itemId)`. Строка получает `id`, `slug`, `title`,
-`displayLinePrice`, optional `configurationLabel`, `quantity`. displayLinePrice —
+`displayLinePrice`, optional `configurationLabel`/`unavailable`, `quantity`. Availability
+проецируется adapter из отдельного current Product input через container props (8.36),
+не из Cart snapshot. Unavailable строка видима с «Нет в наличии», quantity и enabled REMOVE.
+displayLinePrice —
 готовая итоговая цена ВСЕЙ строки с учётом quantity; configurationLabel описывает
 ОДНУ единицу и не умножается визуально на quantity. Frontend не рассчитывает line
 price, stock или availability. Формат selectable Tea labels следует 8.10.
@@ -2592,9 +2669,11 @@ controls/typography. Basket navigation: link «Перейти в корзину�
 
 Named aside/region, настоящие count/chevron/remove buttons, aria-expanded и
 aria-controls; remove accessible name различает title и configuration. Никакого
-focus trap, dialog semantics или scroll lock. После remove фокус — на следующем
+focus trap, dialog semantics или scroll lock. Только при сохранённом interaction
+ownership после remove фокус — на следующем
 remove, иначе предыдущем. При удалении последней позиции из focused Widget remove
-фокус переходит на существующую Header basket link. Фоновое очищение Cart не
+фокус переходит на существующую Header basket link, если newer user focus/pointer intent
+не отменил ownership. Фоновое очищение Cart не
 перехватывает focus; исчезнувшие controls не фокусировать.
 Декоративная animation не обязательна; при добавлении уважать reduced motion.
 

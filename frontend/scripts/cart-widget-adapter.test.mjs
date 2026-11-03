@@ -74,3 +74,17 @@ test('empty remains empty and adapter never mutates the canonical snapshot', () 
   assert.equal(toCartWidgetItems(items, unavailableLabel)[0].title, item.presentation.title);
   assert.deepEqual(toCartWidgetItems([], unavailableLabel), []);
 });
+
+test('unavailable existing row preserves identity, quantity and label independently of other configurations', () => {
+  const items=[quoted(makeItem('tea-50',2)),quoted(makeItem('tea-100',1))];
+  const availability=[{productKey:'tea-presentation',configurationId:'tea-50',available:false},{productKey:'tea-presentation',configurationId:'tea-100',available:true}];
+  const rows=toCartWidgetItems(items,unavailableLabel,availability);
+  assert.equal(rows.length,2);assert.equal(rows[0].unavailable,true);assert.equal(rows[0].quantity,2);assert.equal(rows[0].id,items[0].id);
+  assert.equal(rows[0].configurationLabel,'50 г.');assert.equal(rows[1].unavailable,undefined);
+});
+test('Widget availability follows the supplied current input, never a Cart presentation flag',()=>{
+  const item={...quoted(makeItem()),presentation:{slug:'p',title:'Title',unavailable:true}};
+  assert.equal(toCartWidgetItems([item],unavailableLabel)[0].unavailable,undefined);
+  assert.equal(toCartWidgetItems([item],unavailableLabel,[{productKey:'tea-presentation',configurationId:'tea-50',available:false}])[0].unavailable,true);
+  assert.equal(toCartWidgetItems([item],unavailableLabel,[{productKey:'tea-presentation',configurationId:'tea-50',available:true}])[0].unavailable,undefined);
+});

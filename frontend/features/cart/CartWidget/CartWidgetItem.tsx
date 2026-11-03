@@ -21,6 +21,7 @@ export function CartWidgetItem({ item, onRemove, removeRef }: Readonly<{
             <span className={styles.srOnly}>Конфигурация одной единицы: </span>{item.configurationLabel}
           </small>}
         </p>
+        {item.unavailable && <span className={styles.availabilityStatus}>Нет в наличии</span>}
       </div>
       <span className={styles.quantity}><span className={styles.srOnly}>Количество: </span>{item.quantity} шт.</span>
       <button ref={removeRef} className={styles.remove} type="button"

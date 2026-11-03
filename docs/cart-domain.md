@@ -13,15 +13,21 @@ The temporary Product key uses the existing presentation slug. The navigation sl
 in the snapshot is independent of identity. A structured JSON tuple supplies an
 opaque deterministic local line ID; a future server line ID is a separate concern.
 
-ADD merges positive safe-integer quantities and refreshes presentation/pricing,
+Transitions are immutable; one Product may have several configuration lines, but
+only one line per Product + configuration identity. ADD merges positive safe-integer quantities and refreshes presentation/pricing,
 without moving the line. SET changes an existing line's absolute quantity. REMOVE
 deletes a complete line. Unknown SET/REMOVE IDs return `not-found`; zero is invalid,
 not removal. New lines append. Selectors never sum configurations.
 
 The Provider exposes state, selectors and Promise mutation results, hiding local
 transition functions from consumers. Success from ADD includes the resulting item
-and addedQuantity; no notification state or event bus exists. Mutations serialize
-against the latest local snapshot even when several run before React renders.
+and addedQuantity. Cart itself has no notification state or event bus; the purchase
+caller dispatches application `cart.added` after successful ADD. SET/REMOVE, rejected
+commands and no-ops do not notify. Canonical Cart is the sole source of confirmed
+quantity; there are no quantity-zero CartItems. Mutations serialize against the
+latest local snapshot even when several run before React renders. The current
+in-memory Provider publishes its ref snapshot before returning success; this is
+not a specified network publication/revision guarantee for a future async backend.
 
 ## Pricing and future API
 
@@ -32,21 +38,49 @@ price, discount, availability or stock rules are calculated. A throwing resolver
 fails the mutation atomically.
 
 The resolver is a local-only boundary, not an API transport abstraction. Future
-backend-backed mutations replace Provider internals and adapt confirmed snapshots
-to the same consumer interface. No endpoint, DTO or server identity is assumed.
+backend-backed integration must adapt confirmed snapshots to consumers; its mutation
+postconditions/publication semantics still require a separate contract (F4). The
+temporary `productKey=slug` is not backend `canonical_product_id`; mapping awaits the
+backend contract. No endpoint, DTO or server identity is assumed.
 An unavailable dev price is not a server commerce state or an orderable quote.
+Backend pricing/availability remain authoritative. Network retries/idempotency and
+Checkout authoritative validation are not implemented.
 
-## Lifecycle and future sheet integration
+## Lifecycle and integrated Sheet boundary
 
 Client navigation between these two routes and individual consumer remounts keep
 Cart. Provider remount, reload and a new session reset it. There is no browser
 storage, cookie or backend persistence.
 
-Future sheet configuration changes select a target Cart line: use its quantity,
-or 1 if absent. Do not carry quantity between configurations. Draft is a snapshot;
-external updates do not rewrite it reactively. Confirm targets the current Cart:
-SET if the target exists, otherwise ADD. Other configurations remain unchanged.
-This policy is documented only; ProductPurchaseSheet is untouched.
+ProductPurchaseSheet is an integrated single-target editor: load canonical quantity
+or 0 if absent. Switching/reopening resets draft/removal intent; external updates
+do not rewrite the draft. Confirm re-reads the actual target: positive uses SET for
+existing, ADD for absent. Explicit decrement of a target existing at load to zero
+permits REMOVE (or successful already achieved absence); positive clears that intent.
+Missing `0 → 1 → 0` never permits deletion of an externally added line. Untouched zero
+cannot confirm; SET 0 is forbidden. Other configurations remain unchanged. This is
+target editing, not atomic transfer/merge of a source line into another configuration.
+See [ProductCard integration](product-card-cart-integration.md) for UI/session rules.
+
+Availability is a separate current Product input, not Cart existence/presentation.
+Consumers retain unavailable items and quantity, block ADD/increase and allow decrease
+and explicit REMOVE. Card/Sheet guards compare requested quantity against actual Cart
+quantity at action time. The domain primitives remain UI-agnostic; fixtures/diagnostic
+commands are not backend stock enforcement. Widget receives a separate availability
+projection through props; production uses fixture snapshots. Future data ownership
+must supply consistent current inputs; no live synchronization is implemented.
+
+## Remaining audit findings (open)
+
+- F1: atomic Basket configuration transfer/merge semantics are not implemented.
+  The approved business merge rule remains; sequential REMOVE + ADD is not its contract.
+- F4: future async backend mutation publication/postconditions require definition.
+- F7: direct/Widget mutation error feedback remains unresolved; Sheet error handling
+  does not close this finding.
+- F8: browser QA infrastructure/private React internals remain unresolved.
+
+Async intent/focus and availability/identity implementation gates passed. Documentation
+reconciliation closes F9 only; it neither changes the Cart contract nor starts Basket.
 
 ## Verification
 

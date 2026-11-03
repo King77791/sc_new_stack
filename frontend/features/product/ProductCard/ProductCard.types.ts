@@ -1,3 +1,4 @@
+import type { TeaWeight } from './configuration-contract';
 /** UI presentation inputs only; not a Product model or a backend contract. */
 export type ProductCardPresentation = 'full' | 'compact' | 'responsive';
 
@@ -31,8 +32,10 @@ export type ProductCardPrice = Readonly<{
 export type ProductCardConfiguration = Readonly<{
   id: string;
   label: string;
+  /** Canonical nominal purchase weight, not physical Product weight or inventory. */
+  weightGrams: TeaWeight;
   price: ProductCardPrice;
-  /** Explicit presentation availability; supplied by fixtures, later by an API adapter. */
+  /** Unavailable for ADD/increase; identity, inspection and existing Cart reductions remain valid. */
   disabled?: boolean;
 }>;
 
@@ -55,7 +58,8 @@ export type ProductCardData = CardContent & (
       | Readonly<{
         presentation: 'selectable';
         label: string;
-        configurations: readonly [ProductCardConfiguration, ...ProductCardConfiguration[]];
+        /** Validated/normalized at the purchase input boundary before consumption. */
+        configurations: readonly ProductCardConfiguration[];
       }>;
   }>
   | Readonly<{ kind: 'ceramics'; moods?: never; weight?: never }>

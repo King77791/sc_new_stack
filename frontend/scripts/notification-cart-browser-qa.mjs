@@ -53,7 +53,7 @@ async function cardClick(id, selector) {
 async function fullAdd(id = 'a') { await cardClick(id, 'button[aria-label^="В корзину"],button[aria-label^="Добавить ещё"]'); await sleep(80); }
 async function sheet() { await cardClick('a', 'button[aria-haspopup="dialog"]'); await wait(`!!document.querySelector('dialog[open]')`); }
 async function confirm() {
-  await evaluate(`[...document.querySelectorAll('dialog button')].find(n=>n.textContent==='Добавить в корзину').click()`);
+  await evaluate(`document.querySelector('dialog button[aria-busy]').click()`);
   await wait(`!document.querySelector('dialog')`);
 }
 async function noEvent(operation, label) {
@@ -96,7 +96,7 @@ try {
   await width(375);
   await noEvent(sheet, 'Sheet open');
   await noEvent(async () => { await evaluate(`document.querySelector('dialog button[aria-label="Закрыть панель"]').click()`); }, 'Sheet cancel');
-  await sheet(); await confirm(); await idle(); assert.equal(await count(), 5);
+  await sheet(); await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`); await confirm(); await idle(); assert.equal(await count(), 5);
   await sheet(); await confirm(); await idle(); assert.equal(await count(), 5);
   await noEvent(async () => {
     await sheet(); await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`); await confirm();
@@ -130,9 +130,10 @@ try {
   await evaluate(`[...document.querySelectorAll('button')].find(n=>n.textContent==='Remove all (diagnostic)').click()`);
   await wait(`document.querySelector('[data-testid="items"]').textContent==='[]'`); await idle();
   const beforeDirect=await count();
-  await sheet(); await confirm(); await idle();
+  await sheet(); await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`); await confirm(); await idle();
   await sheet();
   await evaluate(`[...document.querySelectorAll('dialog [aria-label="Выберите вес"] button')].find(n=>n.textContent==='100 г.').click()`);
+  await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`);
   await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`);
   await confirm(); await idle(); assert.equal(await count(),beforeDirect+2);
   const quantities=()=>evaluate(`JSON.parse(document.querySelector('[data-testid="items"]').textContent).map(n=>[n.presentation.configurationLabel,n.quantity])`);
@@ -152,6 +153,44 @@ try {
   assert.equal(await evaluate(`!!document.querySelector('aside')`),false);
   await wait(`document.activeElement===document.querySelector('[data-card="a"] button[aria-haspopup="dialog"]')`);
   console.log('Unified compact root Cart: isolated +/-/REMOVE, bag ADD notifications, last REMOVE clears Header dot, focus CTA PASS');
+
+  for (const viewport of [375,414]) {
+    await width(viewport); const initialCount=await count();
+    await sheet();
+    await evaluate(`[...document.querySelectorAll('dialog [aria-label="Выберите вес"] button')].find(n=>n.textContent==='50 г.').click()`);
+    assert.equal(await evaluate('Number(document.querySelector("dialog output").textContent)'),0);
+    assert.equal(await evaluate('document.querySelector("dialog button[aria-busy]").disabled'),true);
+    await noEvent(()=>evaluate('document.querySelector("dialog button[aria-busy]").click()'),'untouched zero no mutation');
+    await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`);
+    await confirm(); await idle(); assert.equal(await count(),initialCount+1,'initial Sheet ADD exactly once');
+    await sheet();
+    await evaluate(`[...document.querySelectorAll('dialog [aria-label="Выберите вес"] button')].find(n=>n.textContent==='250 г.').click()`);
+    await evaluate(`document.querySelector('dialog button[aria-label="Увеличить количество"]').click()`);
+    await confirm(); await idle(); assert.equal(await count(),initialCount+2);
+    await sheet();
+    await evaluate(`document.querySelector('dialog button[aria-label="Уменьшить количество"]').click()`);
+    assert.equal(await evaluate('document.querySelector("dialog button[aria-busy]").textContent'),'Удалить');
+    await noEvent(confirm,'Sheet REMOVE250 with remaining50');
+    assert.deepEqual(await quantities(),[['50 г.',1]]);
+    assert.equal(await evaluate(`!!document.querySelector('[data-cart-indicator]')`),true);
+    await wait(`document.activeElement===document.querySelector('[data-card="a"] button[aria-label^="Выбрать фасовку"]')`);
+    await width(1280); assert.ok(await evaluate(`document.querySelector('aside').textContent.includes('1 позиция')`));
+    await width(viewport);
+    if(viewport===375){await cardClick('ceramics','button[aria-label^="В корзину"]');await idle();}
+    await sheet(); await evaluate(`document.querySelector('dialog button[aria-label="Уменьшить количество"]').click()`);
+    await noEvent(confirm,'Sheet REMOVE last Product configuration');
+    await wait(`document.activeElement===document.querySelector('[data-card="a"] button[aria-haspopup="dialog"]')`);
+    if(viewport===375){
+      assert.equal(await evaluate(`!!document.querySelector('[data-cart-indicator]')`),true);
+      assert.equal((await quantities()).length,1);
+      await width(1280); assert.ok(await evaluate(`document.querySelector('aside').textContent.includes('1 позиция')`)); await width(viewport);
+      await noEvent(()=>cardClick('ceramics','button[aria-label="Уменьшить количество"]'),'remaining other Product REMOVE');
+    }
+    assert.deepEqual(await quantities(),[]);
+    assert.equal(await evaluate(`!!document.querySelector('[data-cart-indicator]')`),false);
+    assert.equal(await evaluate(`!!document.querySelector('aside')`),false);
+    console.log(`PASS Sheet zero integrations @${viewport}: ADD exactly once, REMOVE/no-op silent, highest remaining, Header dot and Widget canonical removal, focus`);
+  }
 
   // Footer cannot cover transient feedback. Existing widget remains behind Footer.
   await width(1280); await evaluate('window.scrollTo(0,document.documentElement.scrollHeight)');

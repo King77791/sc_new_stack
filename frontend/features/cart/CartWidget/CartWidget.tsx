@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { CartWidgetItem } from './CartWidgetItem';
 import type { CartWidgetProps } from './CartWidget.types';
 import styles from './CartWidget.module.css';
+import { captureFocusOwnership } from '@/lib/focus-ownership';
 
 const positionPlural = new Intl.PluralRules('ru');
 const positionWords: Partial<Record<Intl.LDMLPluralRule, string>> = {
@@ -22,12 +23,14 @@ function NonEmptyCartWidget({ items, onRemoveItem }: CartWidgetProps) {
   const contentId = useId();
   const chevron = useRef<HTMLButtonElement>(null);
   const removeButtons = useRef(new Map<string, HTMLButtonElement>());
-  const pendingRemoval = useRef<{ id: string; index: number; nextId?: string } | null>(null);
+  const pendingRemoval = useRef<{ id: string; index: number; nextId?: string; focus: ReturnType<typeof captureFocusOwnership> } | null>(null);
+  useEffect(() => () => { pendingRemoval.current?.focus.dispose(); pendingRemoval.current = null; }, []);
 
   useEffect(() => {
     const pending = pendingRemoval.current;
     if (!pending || items.some(item => item.id === pending.id)) return;
     pendingRemoval.current = null;
+    if (!pending.focus.release()) return;
     const next = removeButtons.current.get(pending.nextId ?? '')
       ?? removeButtons.current.get(items[Math.min(pending.index, items.length - 1)]?.id ?? '');
     // Last-item focus belongs to future shell integration; an empty widget has no controls.
@@ -36,8 +39,16 @@ function NonEmptyCartWidget({ items, onRemoveItem }: CartWidgetProps) {
 
   const requestRemoval = (id: string) => {
     const index = items.findIndex(item => item.id === id);
-    pendingRemoval.current = { id, index, nextId: (items[index + 1] ?? items[index - 1])?.id };
-    onRemoveItem(id);
+    pendingRemoval.current?.focus.dispose();
+    const request = { id, index, nextId: (items[index + 1] ?? items[index - 1])?.id,
+      focus: captureFocusOwnership(removeButtons.current.get(id) ?? null) };
+    pendingRemoval.current = request;
+    const failed = () => {
+      if (pendingRemoval.current !== request) return;
+      request.focus.dispose(); pendingRemoval.current = null;
+    };
+    try { void Promise.resolve(onRemoveItem(id)).then(result => { if (result === false) failed(); }, failed); }
+    catch { failed(); }
   };
 
   return (
