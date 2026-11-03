@@ -1,5 +1,6 @@
 import type {
   AddItemInput, CartIdentity, CartItem, ConfigurationKey, MutationResult, ResolveCartPricing, SuccessfulAdd,
+  ResolveTransferTarget, TransferConfigurationInput, TransferConfigurationResult, TransferFailureReason,
 } from './cart.types';
 
 /** Structured serialization distinguishes delimiters, fixed and selectable keys. */
@@ -75,4 +76,57 @@ export function setItemQuantity(items: readonly CartItem[], itemId: string, quan
 export function removeItem(items: readonly CartItem[], itemId: string): Transition<{ itemId: string }> {
   if (!items.some(item => item.id === itemId)) return failure(items, 'not-found');
   return { items: items.filter(item => item.id !== itemId), result: { ok: true, value: { itemId } } };
+}
+
+function validIdentity(value: CartIdentity | undefined): value is CartIdentity {
+  return Boolean(value && typeof value.productKey === 'string' && value.productKey.trim()
+    && (value.configuration?.kind === 'fixed' || (value.configuration?.kind === 'selectable'
+      && typeof value.configuration.id === 'string' && value.configuration.id.trim())));
+}
+
+/** One pure transition. Resolvers must be synchronous and pure; publication belongs to Provider. */
+export function transferConfiguration(items: readonly CartItem[], input: TransferConfigurationInput,
+  resolveTarget: ResolveTransferTarget | undefined, resolvePricing: ResolveCartPricing,
+): Readonly<{ items: readonly CartItem[]; result: TransferConfigurationResult }> {
+  const reject = (reason: TransferFailureReason) => ({ items, result: { ok: false as const, reason } });
+  try {
+    const expected = input?.expectedSource, target = input?.target;
+    if (!validIdentity(expected) || !validIdentity(target) || expected.id !== getCartItemId(expected)
+      || target.productKey !== expected.productKey) return reject('invalid-identity');
+    const sourceId = expected.id, targetId = getCartItemId(target);
+    // Detect affected logical duplicates as well as IDs inconsistent with their structured identity.
+    const affected = (id: string) => items.filter(item => item.id === id || (validIdentity(item) && getCartItemId(item) === id));
+    const sources = affected(sourceId), targets = affected(targetId);
+    if (sources.length > 1 || targets.length > 1 || [...sources, ...targets].some(item =>
+      !validIdentity(item) || item.id !== getCartItemId(item))) return reject('invalid-identity');
+    const source = sources[0], previous = targets[0];
+    if (!source) return reject('not-found');
+    if (source !== expected) return reject('conflict');
+    if (!validQuantity(source.quantity) || (previous && !validQuantity(previous.quantity))) return reject('invalid-quantity');
+    if (sourceId === targetId) return { items, result: { ok: true, value: { outcome: 'unchanged', item: source } } };
+    if (source.configuration.kind !== 'selectable' || target.configuration.kind !== 'selectable') return reject('invalid-identity');
+    if (!resolveTarget) return reject('validation-unavailable');
+    const definition = resolveTarget(target);
+    if (!definition.ok) return reject(definition.reason);
+    if (!validIdentity(definition.identity) || getCartItemId(definition.identity) !== targetId) return reject('invalid-identity');
+    if (typeof definition.available !== 'boolean' || typeof definition.presentation?.slug !== 'string'
+      || !definition.presentation.slug.trim() || typeof definition.presentation.title !== 'string'
+      || !definition.presentation.title.trim() || typeof definition.presentation.configurationLabel !== 'string'
+      || !definition.presentation.configurationLabel.trim()) return reject('validation-unavailable');
+    if (!definition.available) return reject('unavailable');
+    const quantity = (previous?.quantity ?? 0) + source.quantity;
+    if (!validQuantity(quantity)) return reject('invalid-quantity');
+    const item = quote({ id: targetId, productKey: target.productKey, configuration: { ...target.configuration },
+      quantity, presentation: { ...definition.presentation } }, resolvePricing);
+    if (!item) return reject('pricing-failed');
+    const next = previous
+      ? items.filter(current => current !== source).map(current => current === previous ? item : current)
+      : items.map(current => current === source ? item : current);
+    return { items: next, result: { ok: true, value: {
+      outcome: previous ? 'merged' : 'transferred', source: { productKey: source.productKey, configuration: { ...source.configuration } },
+      item, movedQuantity: source.quantity,
+    } } };
+  } catch {
+    return reject('unexpected-failure');
+  }
 }

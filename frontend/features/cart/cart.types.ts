@@ -40,6 +40,20 @@ export type MutationResult<T> = Readonly<{ ok: true; value: T }>
 /** Explicit local quote boundary. No price, stock or discount rules live in Cart. */
 export type ResolveCartPricing = (item: Omit<CartItem, 'pricing'>) => CartPricing;
 
+/** Local canonical object precondition, not a serializable backend request. */
+export type TransferConfigurationInput = Readonly<{ expectedSource: CartItem; target: CartIdentity }>;
+export type TransferFailureReason = Extract<MutationResult<never>, { ok: false }>['reason']
+  | 'conflict' | 'unavailable' | 'validation-unavailable' | 'unexpected-failure';
+export type TransferConfigurationResult =
+  | Readonly<{ ok: true; value: Readonly<{ outcome: 'transferred' | 'merged'; source: CartIdentity; item: CartItem; movedQuantity: number }> }>
+  | Readonly<{ ok: true; value: Readonly<{ outcome: 'unchanged'; item: CartItem }> }>
+  | Readonly<{ ok: false; reason: TransferFailureReason }>;
+
+/** Current Product input boundary; no stock, pricing or Product-specific rules in Cart. */
+export type ResolveTransferTarget = (target: CartIdentity) =>
+  | Readonly<{ ok: true; identity: CartIdentity; presentation: CartPresentation; available: boolean }>
+  | Readonly<{ ok: false; reason: 'invalid-identity' | 'validation-unavailable' }>;
+
 export type CartPublicInterface = Readonly<{
   items: readonly CartItem[];
   itemCount: number;
@@ -49,4 +63,5 @@ export type CartPublicInterface = Readonly<{
   addItem: (input: AddItemInput) => Promise<MutationResult<SuccessfulAdd>>;
   setItemQuantity: (itemId: string, quantity: number) => Promise<MutationResult<CartItem>>;
   removeItem: (itemId: string) => Promise<MutationResult<{ itemId: string }>>;
+  transferConfiguration: (input: TransferConfigurationInput) => Promise<TransferConfigurationResult>;
 }>;

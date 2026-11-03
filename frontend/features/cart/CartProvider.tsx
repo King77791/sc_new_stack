@@ -2,19 +2,23 @@
 
 import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
 import * as model from './cart.model';
-import type { CartItem, CartPublicInterface, ResolveCartPricing } from './cart.types';
+import type { CartItem, CartPublicInterface, ResolveCartPricing, ResolveTransferTarget } from './cart.types';
 
 const CartContext = createContext<CartPublicInterface | null>(null);
 
 /** In-memory owner only. Mount under a persistent dev layout; no storage or HTTP. */
-export function CartProvider({ children, resolvePricing }: Readonly<{
+export function CartProvider({ children, resolvePricing, resolveTransferTarget }: Readonly<{
   children: ReactNode;
   resolvePricing: ResolveCartPricing;
+  resolveTransferTarget?: ResolveTransferTarget;
 }>) {
   const [items, setItems] = useState<readonly CartItem[]>([]);
   // Event handlers read the latest committed transition even before React renders
   // a batch of successive mutations. The ref and render snapshot share the same array.
   const current = useRef(items);
+  // Old command references still validate/quote against the latest supplied inputs.
+  const transferResolvers = useRef({ resolveTransferTarget, resolvePricing });
+  transferResolvers.current = { resolveTransferTarget, resolvePricing };
   const publish = (next: readonly CartItem[]) => {
     if (next === current.current) return;
     current.current = next;
@@ -38,6 +42,12 @@ export function CartProvider({ children, resolvePricing }: Readonly<{
     },
     removeItem: async itemId => {
       const transition = model.removeItem(current.current, itemId);
+      publish(transition.items);
+      return transition.result;
+    },
+    transferConfiguration: async input => {
+      const resolvers = transferResolvers.current;
+      const transition = model.transferConfiguration(current.current, input, resolvers.resolveTransferTarget, resolvers.resolvePricing);
       publish(transition.items);
       return transition.result;
     },

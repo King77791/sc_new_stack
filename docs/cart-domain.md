@@ -70,17 +70,83 @@ commands are not backend stock enforcement. Widget receives a separate availabil
 projection through props; production uses fixture snapshots. Future data ownership
 must supply consistent current inputs; no live synchronization is implemented.
 
+## Atomic configuration transfer/merge v1.0 — implemented
+
+F1 CLOSED after implementation and verification. Basket UI is not implemented.
+The public operation is:
+
+```ts
+transferConfiguration(input: TransferConfigurationInput): Promise<TransferConfigurationResult>
+// input: { expectedSource: CartItem; target: CartIdentity }
+```
+
+`expectedSource` is the canonical immutable object confirmed by the caller. Current
+in-memory validation compares `actualSource === expectedSource`; cloning, JSON restore,
+or quantity-only comparison does not satisfy this precondition. This is a local version
+check, not a future transport DTO. Changed source returns `conflict`; missing source
+returns `not-found`, without creating a target from the old snapshot.
+
+- `transferred`: absent target replaces source at its array position with all source Q.
+- `merged`: existing target retains identity/position and receives actual target Q +
+  source Q; source disappears. Unrelated lines retain references and relative order.
+- `unchanged`: same identity, after existence/precondition checks; returns the current
+  item without resolvers, a new items snapshot or publication.
+
+Applied success returns `source` identity, resulting `item`, `movedQuantity` and outcome.
+An operation-specific `ok/value/reason` result leaves ADD/SET/REMOVE contracts unchanged.
+Failures: `not-found`, `invalid-identity`, `invalid-quantity`, `pricing-failed`, `conflict`,
+`unavailable`, `validation-unavailable`, `unexpected-failure`. Cross-product, affected
+duplicate/inconsistent identities, unsupported configuration and overflow reject atomically.
+
+One pure transition uses the latest Cart. Provider has no await between reading it,
+validating, quoting and publishing one resulting snapshot. Rejection/no-op returns the
+same array and publishes nothing. Separate public REMOVE + ADD is prohibited. Results
+describe the applied transition; a subsequent command can change Cart before a caller
+continues after await. No `cart.added` event is produced.
+
+### Current Product and pricing boundaries
+
+The optional synchronous `ResolveTransferTarget` input is read at command execution;
+even an old public command reference uses the latest supplied resolver props. Missing
+resolver/current Product data fails closed. The pure Product adapter owns membership,
+configuration input normalization, selector applicability and current target metadata.
+Cart model imports no ProductCard types and knows no four-slot or weightGrams rules.
+The application provider currently validates against frontend Product fixtures only.
+
+Unavailable target rejects both creation and merge, since either increases its actual Q.
+Unavailable source can move to an available target. Availability is not stored in Cart
+identity. Source changes conflict; external target ADD/SET is merged from actual quantity;
+unrelated changes preserve the source precondition. Competing operations consume source
+once. REMOVE→ADD of the same source identity does not revive the old object precondition.
+
+Target presentation is rebuilt from current Product input. Existing ResolveCartPricing
+quotes resulting target quantity, never source price or a sum of formatted old totals.
+Normal unavailable pricing is a valid result; a throwing quote rejects with no mutation.
+No unit/discount/group/Basket total calculation is added. Resolvers must be pure and
+synchronous. Live Product input ownership, backend atomicity/version preconditions and
+network retry/idempotency guarantees remain future integration responsibilities.
+
+### Verification
+
+Baseline 90 deterministic tests plus 44 F1 domain/adapter tests: 134 PASS. Public
+Provider QA has 14 scenario groups (no React Fiber): one observable snapshot for applied
+transfer/merge, none for no-op/rejection/quote failure, latest inputs, races and existing
+commands. Dev-only `/dev/cart-transfer` exposes that isolated consumer harness and is
+404 in production. Run it with `frontend/scripts/cart-transfer-provider-qa.mjs` using the
+same CART_QA_URL/CART_QA_CHROME environment as other browser scripts.
+ProductCard, availability, Widget/Header and Notification browser regressions, lint,
+TypeScript and production build passed. Frozen UI and RootLayout were not modified.
+
 ## Remaining audit findings (open)
 
-- F1: atomic Basket configuration transfer/merge semantics are not implemented.
-  The approved business merge rule remains; sequential REMOVE + ADD is not its contract.
 - F4: future async backend mutation publication/postconditions require definition.
 - F7: direct/Widget mutation error feedback remains unresolved; Sheet error handling
   does not close this finding.
 - F8: browser QA infrastructure/private React internals remain unresolved.
 
 Async intent/focus and availability/identity implementation gates passed. Documentation
-reconciliation closes F9 only; it neither changes the Cart contract nor starts Basket.
+reconciliation closed F9; the subsequent atomic operation gate closed F1. F4/F7/F8
+remain open and Basket implementation has not started.
 
 ## Verification
 

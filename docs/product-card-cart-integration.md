@@ -134,5 +134,5 @@ the documentation reconciliation does not rerun runtime QA.
 CartWidget, Header indicator and Notification are integrated in the application shell.
 See [Cart domain](cart-domain.md), [Widget integration](cart-widget-integration.md)
 and AGENTS §§24–26. ProductCard/Sheet/Widget remain READY / FROZEN. Backend/API and
-Checkout validation remain future work. Open findings F1/F4/F7/F8 are listed in the
+Checkout validation remain future work. Current statuses of findings F1/F4/F7/F8 are listed in the
 Cart domain document; this reconciliation closes documentation drift F9 only.

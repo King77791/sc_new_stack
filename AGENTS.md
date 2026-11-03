@@ -1145,7 +1145,7 @@ Backend является источником истины для:
 - возможности оформления заказа.
 
 Реализован общий in-memory CartProvider: canonical frontend Cart для confirmed
-quantities, immutable ADD/SET/REMOVE и нескольких configurations одного Product.
+quantities, immutable ADD/SET/REMOVE, atomic transferConfiguration и нескольких configurations одного Product.
 Quantity — positive safe integer; quantity0 CartItem и SET0 запрещены. Identity —
 Product + Purchase Configuration, локальный opaque ID — structured JSON tuple;
 productKey=slug является временной frontend boundary, не backend canonical_product_id.
@@ -1185,7 +1185,30 @@ persistence или frontend-authoritative commerce logic.
 ### 8.29. Changing Weight Inside Cart
 
 Утверждённое business requirement для будущего Basket editor. Atomic transfer/merge
-не реализован (F1); ProductPurchaseSheet редактирует один target, не переносит source line.
+реализован и проверен в frontend Cart (F1 CLOSED); Basket UI отсутствует.
+ProductPurchaseSheet редактирует один target, не переносит source line.
+
+`transferConfiguration({ expectedSource, target })` — одна atomic операция с outcomes
+transferred / merged / unchanged. Переносится вся подтверждённая source line;
+local in-memory precondition — actualSource === expectedSource. Не клонировать и не
+восстанавливать expectedSource из JSON: это canonical объект, не transport DTO.
+Changed source → conflict; missing source → not-found; Cart не меняется. Same identity
+после source checks → unchanged без resolvers, нового snapshot или publication.
+Absent target заменяет source на её позиции; existing target сохраняет identity/позицию
+и получает actual target Q + source Q. Overflow/cross-product/affected duplicate identity
+отклоняют всю операцию. Unrelated строки сохраняются; REMOVE + ADD запрещены.
+Current Product validation resolver проверяет target definition/eligibility при execution;
+без достаточного input операция отклоняется. Domain не знает Tea slots/weightGrams.
+Unavailable target отклоняется даже при existing line; unavailable source разрешена
+для available target. Target presentation берётся из current Product input, pricing —
+из existing ResolveCartPricing для resulting target quantity, без вычисления сумм.
+Штатный unavailable quote допустим; throwing quote → pricing-failed и Cart unchanged.
+Provider применяет transition к latest snapshot без await и публикует не более одного
+snapshot (только applied success). Операция не создаёт cart.added. Повтор не переносит
+source дважды; recreated source не проходит старую precondition.
+Production composition пока использует frontend Product fixtures; live backend validation,
+network atomicity/retries/idempotency и F4 остаются вне этого контракта. Success описывает
+применённый transition, а не неизменность Cart после Promise. Подробности — docs/cart-domain.md.
 
 Пользователь должен иметь возможность изменить выбранный вес
 весового Product непосредственно в корзине.
@@ -1730,7 +1753,8 @@ CartProvider, ProductPurchaseSheet, desktop CartWidget, Notification и Header C
 Indicator уже интегрированы; см. 8.27, 24–26 и docs/product-card-cart-integration.md,
 docs/cart-domain.md, docs/cart-widget-integration.md. ProductCard/Sheet/Widget — READY / FROZEN.
 Backend Cart, network retries/idempotency и authoritative Checkout validation отсутствуют.
-Открыты F1 (atomic Basket transfer/merge), F4 (async backend publication/postconditions),
+F1 (atomic Cart transfer/merge) CLOSED после implementation и verification; Basket UI не начат.
+Открыты F4 (async backend publication/postconditions),
 F7 (direct/Widget error feedback), F8 (browser QA/private React internals).
 Documentation reconciliation F9 не закрывает эти findings и не разрешает следующий gate.
 ProductCard API DTO, реальные Cart/Favorite endpoints и окончательные
