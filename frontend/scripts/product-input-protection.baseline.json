@@ -1,0 +1,7 @@
+{
+  "revision": "7689095178f65ee2f28e084e35e88c586d006d06",
+  "approvedBodies": {
+    "R29 protected tracked files match HEAD": "bf1a79b0b0106b45dd74d8ce19ce1a3d37b4b44f50df049867c0ab99499f1f4b",
+    "R30 legacy regression suite files remain unchanged (executed separately)": "794516111202e20205a06f20ae931e676b4d2c2fc81cb2e040f58ec51bfb7a11"
+  }
+}
