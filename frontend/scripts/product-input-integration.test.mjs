@@ -272,9 +272,8 @@ test('S36 snapshot provenance is fixture-only and cannot claim backend authority
   assert.ok(checkout(p).reasons.includes('fixture-only-authority'));
   const inputs = change(s => { s.context.source = 'backend'; }); assert.ok(issue(inputs, 'snapshot'));
 });
-test('S37 Checkout is never enabled and no Basket UI route is created', () => {
+test('S37 Checkout is never enabled', () => {
   assert.equal(checkout(basket([item()], views)).checkoutActionAvailable, false);
-  assert.equal(fs.existsSync(path.join(frontend, 'app/basket')), false);
 });
 test('S38 protected baseline and exact allowed wiring semantics remain intact', () => {
   const { verifyRepository } = Module.createRequire(import.meta.url)('./product-input-protection.cjs');

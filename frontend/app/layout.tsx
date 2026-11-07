@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/SiteHeader/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter/SiteFooter';
 import { CartApplicationProvider } from '@/features/cart/CartApplicationProvider';
 import { CartWidgetContainer } from '@/features/cart/CartWidgetContainer';
+import { FloatingCartWidget } from './FloatingCartWidget';
 import { NotificationProvider, NotificationHost } from '@/components/Notification/NotificationProvider';
 import { applicationProductInputs } from '@/features/product-input/product-input.application';
 import './globals.css';
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <NotificationProvider><CartApplicationProvider>
           <SiteHeader />
           <div className="app-content">{children}</div>
-          <CartWidgetContainer unavailablePriceLabel="Цена недоступна" availability={applicationProductInputs.widgetAvailability} />
+          <FloatingCartWidget>
+            <CartWidgetContainer unavailablePriceLabel="Цена недоступна" availability={applicationProductInputs.widgetAvailability} />
+          </FloatingCartWidget>
           <SiteFooter />
           <NotificationHost />
         </CartApplicationProvider></NotificationProvider>
