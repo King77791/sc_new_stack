@@ -1,0 +1,21 @@
+.gallery { --gallery-width: 755px; --gallery-height: 500px; --gallery-gap: 20px; padding: 80px 0; }
+.viewport { position: relative; height: var(--gallery-height); overflow: hidden; touch-action: pan-y pinch-zoom; user-select: none; }
+.viewport[data-multiple] { cursor: grab; }
+.viewport[data-dragging] { cursor: grabbing; }
+.viewport:focus-visible { outline: 2px solid var(--color-cream-gold); outline-offset: -2px; }
+.slide { position: absolute; left: 50%; top: 0; width: var(--gallery-width); height: var(--gallery-height); margin: 0 0 0 calc(var(--gallery-width) / -2); opacity: .2; transition: transform 180ms ease-out, opacity 180ms ease-out; pointer-events: none; }
+.slide[data-active] { opacity: 1; }
+.slide img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.viewport[data-main-image-fallback] .slide img { object-fit: contain; }
+.viewport[data-dragging] .slide { transition: none; }
+.controls { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; pointer-events: none; max-width: 1560px; margin: auto; }
+.controls button { pointer-events: auto; width: 48px; height: 48px; flex: 0 0 48px; border: 0; border-radius: 8px; background: transparent; color: #fff; font: inherit; font-size: 40px; cursor: pointer; }
+.controls button:disabled { opacity: .3; cursor: default; }
+.controls button:focus-visible { outline: 2px solid var(--color-cream-gold); outline-offset: -3px; }
+.next, .previous { display: block; width: 24px; height: 24px; margin: auto; background: currentColor; mask: url('/icons/product-page/gallery-next.svg') center / contain no-repeat; }
+.previous { transform: rotate(180deg); }
+.status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.empty { padding: 40px 16px; text-align: center; }
+@media (max-width: 1279px) { .gallery { --gallery-width: 400px; --gallery-height: 266px; --gallery-gap: 13.333px; padding: 24px 0; } .slide img { border-radius: 4.267px; } }
+@media (max-width: 767px) { .gallery { --gallery-width: 100%; padding: 40px 16px; } .viewport { width: 100%; height: auto; aspect-ratio: 343 / 225; } .slide { height: 100%; } .slide img { border-radius: 3.624px; } }
+@media (prefers-reduced-motion: reduce) { .slide { transition: none; } }

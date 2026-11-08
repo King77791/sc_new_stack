@@ -1,0 +1,1285 @@
+{
+  "metrics": [
+    {
+      "width": 1920,
+      "clientWidth": 1920,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 200,
+        "width": 1920,
+        "height": 380
+      },
+      "artwork": {
+        "x": 466,
+        "y": 200,
+        "width": 720,
+        "height": 380
+      },
+      "image": {
+        "x": 553.5,
+        "y": 200,
+        "width": 545,
+        "height": 545
+      },
+      "titleBox": {
+        "x": 1202,
+        "y": 231,
+        "width": 368,
+        "height": 70
+      },
+      "price": {
+        "x": 1202,
+        "y": 317,
+        "width": 105.0625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "400",
+        "opacity": "1"
+      },
+      "characteristics": {
+        "x": 260,
+        "y": 600,
+        "width": 1400,
+        "height": 30
+      },
+      "brewing": {
+        "x": 260,
+        "y": 650,
+        "width": 1400,
+        "height": 74
+      },
+      "brewIcons": [
+        {
+          "x": 395.59375,
+          "y": 678,
+          "width": 33.796875,
+          "height": 40
+        },
+        {
+          "x": 688.046875,
+          "y": 678,
+          "width": 18.328125,
+          "height": 40
+        },
+        {
+          "x": 1003.734375,
+          "y": 678,
+          "width": 34.265625,
+          "height": 40
+        },
+        {
+          "x": 1316.515625,
+          "y": 678,
+          "width": 40,
+          "height": 39.984375
+        }
+      ],
+      "gallery": {
+        "x": 0,
+        "y": 824,
+        "width": 1920,
+        "height": 500
+      },
+      "activeImage": {
+        "x": 582.5,
+        "y": 824,
+        "width": 755,
+        "height": 500
+      },
+      "galleryStyle": {
+        "radius": "8px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 40,
+        "y": 1504,
+        "width": 1840,
+        "height": 874
+      },
+      "relatedStyle": {
+        "rows": "425px 425px",
+        "columns": "360px 360px 360px 360px"
+      },
+      "cards": [
+        {
+          "x": 204,
+          "y": 1504,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 588,
+          "y": 1504,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 972,
+          "y": 1504,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 1356,
+          "y": 1504,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 204,
+          "y": 1953,
+          "width": 360,
+          "height": 425
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    },
+    {
+      "width": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 200,
+        "width": 1440,
+        "height": 380
+      },
+      "artwork": {
+        "x": 226,
+        "y": 200,
+        "width": 720,
+        "height": 380
+      },
+      "image": {
+        "x": 313.5,
+        "y": 200,
+        "width": 545,
+        "height": 545
+      },
+      "titleBox": {
+        "x": 962,
+        "y": 231,
+        "width": 368,
+        "height": 70
+      },
+      "price": {
+        "x": 962,
+        "y": 317,
+        "width": 105.0625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "400",
+        "opacity": "1"
+      },
+      "characteristics": {
+        "x": 40,
+        "y": 600,
+        "width": 1360,
+        "height": 30
+      },
+      "brewing": {
+        "x": 40,
+        "y": 650,
+        "width": 1360,
+        "height": 74
+      },
+      "brewIcons": [
+        {
+          "x": 155.59375,
+          "y": 678,
+          "width": 33.796875,
+          "height": 40
+        },
+        {
+          "x": 448.046875,
+          "y": 678,
+          "width": 18.328125,
+          "height": 40
+        },
+        {
+          "x": 763.734375,
+          "y": 678,
+          "width": 34.265625,
+          "height": 40
+        },
+        {
+          "x": 1076.515625,
+          "y": 678,
+          "width": 40,
+          "height": 39.984375
+        }
+      ],
+      "gallery": {
+        "x": 0,
+        "y": 824,
+        "width": 1440,
+        "height": 500
+      },
+      "activeImage": {
+        "x": 342.5,
+        "y": 824,
+        "width": 755,
+        "height": 500
+      },
+      "galleryStyle": {
+        "radius": "8px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 40,
+        "y": 1504,
+        "width": 1360,
+        "height": 874
+      },
+      "relatedStyle": {
+        "rows": "425px 425px",
+        "columns": "360px 360px 360px"
+      },
+      "cards": [
+        {
+          "x": 156,
+          "y": 1504,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 540,
+          "y": 1504,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 924,
+          "y": 1504,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 156,
+          "y": 1953,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 540,
+          "y": 1953,
+          "width": 360,
+          "height": 425
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    },
+    {
+      "width": 1280,
+      "clientWidth": 1280,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 200,
+        "width": 1280,
+        "height": 380
+      },
+      "artwork": {
+        "x": 156,
+        "y": 200,
+        "width": 700,
+        "height": 380
+      },
+      "image": {
+        "x": 233.5,
+        "y": 200,
+        "width": 545,
+        "height": 545
+      },
+      "titleBox": {
+        "x": 872,
+        "y": 231,
+        "width": 368,
+        "height": 70
+      },
+      "price": {
+        "x": 872,
+        "y": 317,
+        "width": 105.0625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "400",
+        "opacity": "1"
+      },
+      "characteristics": {
+        "x": 40,
+        "y": 600,
+        "width": 1200,
+        "height": 30
+      },
+      "brewing": {
+        "x": 40,
+        "y": 650,
+        "width": 1200,
+        "height": 142
+      },
+      "brewIcons": [
+        {
+          "x": 230.59375,
+          "y": 678,
+          "width": 33.796875,
+          "height": 40
+        },
+        {
+          "x": 523.046875,
+          "y": 678,
+          "width": 18.328125,
+          "height": 40
+        },
+        {
+          "x": 838.734375,
+          "y": 678,
+          "width": 34.265625,
+          "height": 40
+        },
+        {
+          "x": 531.515625,
+          "y": 746,
+          "width": 40,
+          "height": 39.984375
+        }
+      ],
+      "gallery": {
+        "x": 0,
+        "y": 892,
+        "width": 1280,
+        "height": 500
+      },
+      "activeImage": {
+        "x": 262.5,
+        "y": 892,
+        "width": 755,
+        "height": 500
+      },
+      "galleryStyle": {
+        "radius": "8px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 40,
+        "y": 1572,
+        "width": 1200,
+        "height": 874
+      },
+      "relatedStyle": {
+        "rows": "425px 425px",
+        "columns": "360px 360px 360px"
+      },
+      "cards": [
+        {
+          "x": 76,
+          "y": 1572,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 460,
+          "y": 1572,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 844,
+          "y": 1572,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 76,
+          "y": 2021,
+          "width": 360,
+          "height": 425
+        },
+        {
+          "x": 460,
+          "y": 2021,
+          "width": 360,
+          "height": 425
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    },
+    {
+      "width": 1024,
+      "clientWidth": 1024,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 113,
+        "width": 1024,
+        "height": 356
+      },
+      "artwork": {
+        "x": 180.5,
+        "y": 113,
+        "width": 375,
+        "height": 356
+      },
+      "image": {
+        "x": 218,
+        "y": 141,
+        "width": 300,
+        "height": 300
+      },
+      "titleBox": {
+        "x": 603.5,
+        "y": 132,
+        "width": 368,
+        "height": 70
+      },
+      "price": {
+        "x": 603.5,
+        "y": 218,
+        "width": 105.0625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "400",
+        "opacity": "1"
+      },
+      "characteristics": {
+        "x": 40,
+        "y": 489,
+        "width": 944,
+        "height": 30
+      },
+      "brewing": {
+        "x": 40,
+        "y": 535,
+        "width": 944,
+        "height": 65
+      },
+      "brewIcons": [
+        {
+          "x": 58.96875,
+          "y": 560.5,
+          "width": 27.046875,
+          "height": 32
+        },
+        {
+          "x": 286.375,
+          "y": 560.5,
+          "width": 14.671875,
+          "height": 32
+        },
+        {
+          "x": 552.03125,
+          "y": 560.5,
+          "width": 27.40625,
+          "height": 32
+        },
+        {
+          "x": 765.90625,
+          "y": 560.5,
+          "width": 31.984375,
+          "height": 31.984375
+        }
+      ],
+      "gallery": {
+        "x": 0,
+        "y": 644,
+        "width": 1024,
+        "height": 266
+      },
+      "activeImage": {
+        "x": 312,
+        "y": 644,
+        "width": 400,
+        "height": 266
+      },
+      "galleryStyle": {
+        "radius": "4.267px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 20,
+        "y": 1024,
+        "width": 984,
+        "height": 576
+      },
+      "relatedStyle": {
+        "rows": "272px 272px",
+        "columns": "170px 170px 170px"
+      },
+      "cards": [
+        {
+          "x": 36,
+          "y": 1028,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 230,
+          "y": 1028,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 424,
+          "y": 1028,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 36,
+          "y": 1324,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 230,
+          "y": 1324,
+          "width": 170,
+          "height": 272
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    },
+    {
+      "width": 768,
+      "clientWidth": 768,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 113,
+        "width": 768,
+        "height": 356
+      },
+      "artwork": {
+        "x": 144,
+        "y": 113,
+        "width": 192,
+        "height": 356
+      },
+      "image": {
+        "x": 144,
+        "y": 141,
+        "width": 300,
+        "height": 300
+      },
+      "titleBox": {
+        "x": 360,
+        "y": 132,
+        "width": 368,
+        "height": 70
+      },
+      "price": {
+        "x": 360,
+        "y": 218,
+        "width": 105.0625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "400",
+        "opacity": "1"
+      },
+      "characteristics": {
+        "x": 40,
+        "y": 489,
+        "width": 688,
+        "height": 76
+      },
+      "brewing": {
+        "x": 40,
+        "y": 581,
+        "width": 688,
+        "height": 128
+      },
+      "brewIcons": [
+        {
+          "x": 151.96875,
+          "y": 606.5,
+          "width": 27.046875,
+          "height": 32
+        },
+        {
+          "x": 379.375,
+          "y": 606.5,
+          "width": 14.671875,
+          "height": 32
+        },
+        {
+          "x": 152.03125,
+          "y": 669.5,
+          "width": 27.40625,
+          "height": 32
+        },
+        {
+          "x": 370.90625,
+          "y": 669.5,
+          "width": 31.984375,
+          "height": 31.984375
+        }
+      ],
+      "gallery": {
+        "x": 0,
+        "y": 753,
+        "width": 768,
+        "height": 266
+      },
+      "activeImage": {
+        "x": 184,
+        "y": 753,
+        "width": 400,
+        "height": 266
+      },
+      "galleryStyle": {
+        "radius": "4.267px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 20,
+        "y": 1133,
+        "width": 728,
+        "height": 576
+      },
+      "relatedStyle": {
+        "rows": "272px 272px",
+        "columns": "170px 170px 170px"
+      },
+      "cards": [
+        {
+          "x": 36,
+          "y": 1137,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 230,
+          "y": 1137,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 424,
+          "y": 1137,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 36,
+          "y": 1433,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 230,
+          "y": 1433,
+          "width": 170,
+          "height": 272
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    },
+    {
+      "width": 430,
+      "clientWidth": 430,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 113,
+        "width": 430,
+        "height": 412
+      },
+      "artwork": {
+        "x": 0,
+        "y": 113,
+        "width": 430,
+        "height": 356
+      },
+      "image": {
+        "x": 207.5,
+        "y": 169,
+        "width": 300,
+        "height": 300
+      },
+      "titleBox": {
+        "x": 16,
+        "y": 113,
+        "width": 334,
+        "height": 72
+      },
+      "price": {
+        "x": 16,
+        "y": 485,
+        "width": 106.5625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "500",
+        "opacity": "0.8"
+      },
+      "characteristics": {
+        "x": 16,
+        "y": 541,
+        "width": 398,
+        "height": 148
+      },
+      "brewing": {
+        "x": 16,
+        "y": 705,
+        "width": 398,
+        "height": 254
+      },
+      "brewIcons": [
+        {
+          "x": 19.09375,
+          "y": 726.5,
+          "width": 33.796875,
+          "height": 40
+        },
+        {
+          "x": 26.828125,
+          "y": 789.5,
+          "width": 18.328125,
+          "height": 40
+        },
+        {
+          "x": 18.859375,
+          "y": 852.5,
+          "width": 34.265625,
+          "height": 40
+        },
+        {
+          "x": 16,
+          "y": 915.5,
+          "width": 39.984375,
+          "height": 39.984375
+        }
+      ],
+      "gallery": {
+        "x": 16,
+        "y": 1015,
+        "width": 398,
+        "height": 261.078125
+      },
+      "activeImage": {
+        "x": 16,
+        "y": 1015,
+        "width": 398,
+        "height": 261.078125
+      },
+      "galleryStyle": {
+        "radius": "3.624px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 16,
+        "y": 1374.078125,
+        "width": 398,
+        "height": 872
+      },
+      "relatedStyle": {
+        "rows": "272px 272px 272px",
+        "columns": "170px 170px"
+      },
+      "cards": [
+        {
+          "x": 43.5,
+          "y": 1378.078125,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 216.5,
+          "y": 1378.078125,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 43.5,
+          "y": 1674.078125,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 216.5,
+          "y": 1674.078125,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 43.5,
+          "y": 1970.078125,
+          "width": 170,
+          "height": 272
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    },
+    {
+      "width": 390,
+      "clientWidth": 390,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 113,
+        "width": 390,
+        "height": 412
+      },
+      "artwork": {
+        "x": 0,
+        "y": 113,
+        "width": 390,
+        "height": 356
+      },
+      "image": {
+        "x": 187.5,
+        "y": 169,
+        "width": 300,
+        "height": 300
+      },
+      "titleBox": {
+        "x": 16,
+        "y": 113,
+        "width": 294,
+        "height": 72
+      },
+      "price": {
+        "x": 16,
+        "y": 485,
+        "width": 106.5625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "500",
+        "opacity": "0.8"
+      },
+      "characteristics": {
+        "x": 16,
+        "y": 541,
+        "width": 358,
+        "height": 148
+      },
+      "brewing": {
+        "x": 16,
+        "y": 705,
+        "width": 358,
+        "height": 254
+      },
+      "brewIcons": [
+        {
+          "x": 19.09375,
+          "y": 726.5,
+          "width": 33.796875,
+          "height": 40
+        },
+        {
+          "x": 26.828125,
+          "y": 789.5,
+          "width": 18.328125,
+          "height": 40
+        },
+        {
+          "x": 18.859375,
+          "y": 852.5,
+          "width": 34.265625,
+          "height": 40
+        },
+        {
+          "x": 16,
+          "y": 915.5,
+          "width": 39.984375,
+          "height": 39.984375
+        }
+      ],
+      "gallery": {
+        "x": 16,
+        "y": 1015,
+        "width": 358,
+        "height": 234.828125
+      },
+      "activeImage": {
+        "x": 16,
+        "y": 1015,
+        "width": 358,
+        "height": 234.828125
+      },
+      "galleryStyle": {
+        "radius": "3.624px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 16,
+        "y": 1347.828125,
+        "width": 358,
+        "height": 872
+      },
+      "relatedStyle": {
+        "rows": "272px 272px 272px",
+        "columns": "170px 170px"
+      },
+      "cards": [
+        {
+          "x": 23.5,
+          "y": 1351.828125,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 196.5,
+          "y": 1351.828125,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 23.5,
+          "y": 1647.828125,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 196.5,
+          "y": 1647.828125,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 23.5,
+          "y": 1943.828125,
+          "width": 170,
+          "height": 272
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    },
+    {
+      "width": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 113,
+        "width": 375,
+        "height": 412
+      },
+      "artwork": {
+        "x": 0,
+        "y": 113,
+        "width": 375,
+        "height": 356
+      },
+      "image": {
+        "x": 180,
+        "y": 169,
+        "width": 300,
+        "height": 300
+      },
+      "titleBox": {
+        "x": 16,
+        "y": 113,
+        "width": 279,
+        "height": 72
+      },
+      "price": {
+        "x": 16,
+        "y": 485,
+        "width": 106.5625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "500",
+        "opacity": "0.8"
+      },
+      "characteristics": {
+        "x": 16,
+        "y": 541,
+        "width": 343,
+        "height": 148
+      },
+      "brewing": {
+        "x": 16,
+        "y": 705,
+        "width": 343,
+        "height": 254
+      },
+      "brewIcons": [
+        {
+          "x": 19.09375,
+          "y": 726.5,
+          "width": 33.796875,
+          "height": 40
+        },
+        {
+          "x": 26.828125,
+          "y": 789.5,
+          "width": 18.328125,
+          "height": 40
+        },
+        {
+          "x": 18.859375,
+          "y": 852.5,
+          "width": 34.265625,
+          "height": 40
+        },
+        {
+          "x": 16,
+          "y": 915.5,
+          "width": 39.984375,
+          "height": 39.984375
+        }
+      ],
+      "gallery": {
+        "x": 16,
+        "y": 1015,
+        "width": 343,
+        "height": 225
+      },
+      "activeImage": {
+        "x": 16,
+        "y": 1015,
+        "width": 343,
+        "height": 225
+      },
+      "galleryStyle": {
+        "radius": "3.624px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 16,
+        "y": 1338,
+        "width": 343,
+        "height": 872
+      },
+      "relatedStyle": {
+        "rows": "272px 272px 272px",
+        "columns": "170px 170px"
+      },
+      "cards": [
+        {
+          "x": 16,
+          "y": 1342,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 189,
+          "y": 1342,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 16,
+          "y": 1638,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 189,
+          "y": 1638,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 16,
+          "y": 1934,
+          "width": 170,
+          "height": 272
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    },
+    {
+      "width": 320,
+      "clientWidth": 320,
+      "overflow": false,
+      "broken": [],
+      "title": "Золотистый чай",
+      "hero": {
+        "x": 0,
+        "y": 130,
+        "width": 320,
+        "height": 412
+      },
+      "artwork": {
+        "x": 0,
+        "y": 130,
+        "width": 320,
+        "height": 356
+      },
+      "image": {
+        "x": 152.5,
+        "y": 186,
+        "width": 300,
+        "height": 300
+      },
+      "titleBox": {
+        "x": 16,
+        "y": 130,
+        "width": 224,
+        "height": 72
+      },
+      "price": {
+        "x": 16,
+        "y": 502,
+        "width": 106.5625,
+        "height": 40
+      },
+      "priceStyle": {
+        "size": "32px",
+        "weight": "500",
+        "opacity": "0.8"
+      },
+      "characteristics": {
+        "x": 16,
+        "y": 558,
+        "width": 288,
+        "height": 148
+      },
+      "brewing": {
+        "x": 16,
+        "y": 722,
+        "width": 288,
+        "height": 254
+      },
+      "brewIcons": [
+        {
+          "x": 19.09375,
+          "y": 743.5,
+          "width": 33.796875,
+          "height": 40
+        },
+        {
+          "x": 26.828125,
+          "y": 806.5,
+          "width": 18.328125,
+          "height": 40
+        },
+        {
+          "x": 18.859375,
+          "y": 869.5,
+          "width": 34.265625,
+          "height": 40
+        },
+        {
+          "x": 16,
+          "y": 932.5,
+          "width": 39.984375,
+          "height": 39.984375
+        }
+      ],
+      "gallery": {
+        "x": 16,
+        "y": 1032,
+        "width": 288,
+        "height": 188.90625
+      },
+      "activeImage": {
+        "x": 16,
+        "y": 1032,
+        "width": 288,
+        "height": 188.90625
+      },
+      "galleryStyle": {
+        "radius": "3.624px",
+        "arrowBackground": "rgba(0, 0, 0, 0)"
+      },
+      "related": {
+        "x": 0,
+        "y": 1318.90625,
+        "width": 320,
+        "height": 872
+      },
+      "relatedStyle": {
+        "rows": "272px 272px 272px",
+        "columns": "170px 170px"
+      },
+      "cards": [
+        {
+          "x": 0,
+          "y": 1322.90625,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 173,
+          "y": 1322.90625,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 0,
+          "y": 1618.90625,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 173,
+          "y": 1618.90625,
+          "width": 170,
+          "height": 272
+        },
+        {
+          "x": 0,
+          "y": 1914.90625,
+          "width": 170,
+          "height": 272
+        }
+      ],
+      "links": [
+        "/"
+      ]
+    }
+  ],
+  "interactions": {
+    "mouse": true,
+    "touchTablet": true,
+    "touchMobile": true,
+    "arrows": true,
+    "keyboard": true,
+    "pointerCancel": true,
+    "resize": true,
+    "productChange": true,
+    "unmountResizeListeners": 0
+  },
+  "errors": []
+}

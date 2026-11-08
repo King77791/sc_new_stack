@@ -21,7 +21,10 @@ const numeric: Readonly<Record<string, NumericFixture>> = {
 
 const products: ProductInput[] = productCardExamples.map(({ data }) => {
   // Reuse ONLY non-price presentation metadata from the frozen legacy examples.
-  const presentation = { kind: data.kind, slug: data.slug, title: data.title, image: data.image,
+  const presentation = { kind: data.kind, slug: data.slug, title: data.title,
+    image: data.slug === 'tea-presentation'
+      ? { src: '/images/products/tea-presentation/main.webp', alt: 'Золотистые чайные листья, вид сверху', width: 500, height: 500 }
+      : data.image,
     country: data.country, origin: data.origin, purchasePresentation: data.purchasePresentation,
     ...(data.kind === 'tea' ? { moods: data.moods } : {}) } as ProductInput['presentation'];
   const selectable = data.kind === 'tea' && data.weight.presentation === 'selectable' ? data.weight : undefined;
@@ -29,7 +32,25 @@ const products: ProductInput[] = productCardExamples.map(({ data }) => {
     configuration: { kind: 'selectable' as const, id: o.id }, label: o.label, weightGrams: o.weightGrams,
   })) : [{ configuration: { kind: 'fixed' as const }, ...(data.kind === 'tea' ? { label: data.weight.label } : {}) }];
   const productKey = data.slug, policyRevision = 'demo-policy-v1', fixture = numeric[productKey];
-  return { productKey, presentation,
+  // Owner-approved reference UI content only. Identity and all commerce inputs stay unchanged.
+  const detail: ProductInput['detail'] = productKey === 'tea-presentation' ? {
+    provenance: 'demonstration-fixture',
+    gallery: [
+      { src: '/images/products/tea-presentation/gallery-01.webp', alt: 'Чайные листья в стеклянной пиале, вид сверху', width: 755, height: 500 },
+      { src: '/images/products/tea-presentation/gallery-02.webp', alt: 'Чайные листья на светлом фоне', width: 755, height: 500 },
+      { src: '/images/products/tea-presentation/gallery-03.webp', alt: 'Чайные листья в стеклянной пиале, вид сбоку', width: 755, height: 500 },
+      { src: '/images/products/tea-presentation/gallery-04.webp', alt: 'Чайные листья крупным планом', width: 755, height: 500 },
+    ],
+    characteristics: [{ key: 'harvest-year', label: 'Урожай:', value: '2021' }],
+    catalogLinks: {
+      region: { label: 'Юньнань', slug: 'yunnan' },
+      category: { label: 'Пуэр', slug: 'puer' },
+      tastes: [{ label: 'Дымный', slug: 'smoky' }, { label: 'Землистый', slug: 'earthy' }],
+    },
+    brewing: { preparingTime: '3–5 мин', temperature: '95–100 °C', amountPerBrewing: 'на 500 мл 5–7 г', infusionCount: '1 заваривание' },
+    relatedProductKeys: ['discount-tea-presentation', 'pressed-puer-presentation', 'teapot-pharaoh-presentation', 'long-title-tea-presentation', 'availability-tea-presentation'],
+  } : undefined;
+  return { productKey, presentation, ...(detail ? { detail } : {}),
     purchase: selectable ? { kind: 'standard', label: selectable.label, definitions }
       : { kind: 'fixed', ...(data.kind === 'tea' ? { label: data.weight.label } : {}) },
     availability: definitions.map(d => ({ identity: { productKey, configuration: d.configuration },
@@ -49,5 +70,5 @@ const products: ProductInput[] = productCardExamples.map(({ data }) => {
 });
 
 /** One deeply immutable generation, including explicit invalid/non-purchasable preorder metadata. */
-export const applicationProductSnapshot = createProductInputSnapshot({ snapshotId: 'demo-product-input-9b1-v1',
+export const applicationProductSnapshot = createProductInputSnapshot({ snapshotId: 'demo-product-input-10b2b-v1',
   provenance: 'demonstration-fixture', context, products });
