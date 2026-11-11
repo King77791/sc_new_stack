@@ -107,3 +107,43 @@ RAG Contract v1.0 materialization от 2026-10-31 фиксирует приня�
 - **Decision:** Semantic units не равны автоматически Markdown files/paragraphs. Children могут находиться search, но обязательный parent/context восстанавливается до использования.
 - **Reason:** Изолированный rationale без conditions, evidence и boundaries создаёт ложное безусловное утверждение.
 - **Consequences:** Boundaries/constraints загружаются по canonical references без повторной similarity competition; eligibility и scopes применяются ко всему expansion. AI-generated parent summaries не требуются v1.0. См. [RAG Contract](05-rag-contract.md).
+
+## M1.2 — 2026-11-12
+
+Основание ADR-018–023: утверждённый M1.1 PASS WITH NOTES и явное задание M1.2. Статус решений: принято для архитектурной материализации; не approval произведений. См. [Music Production Contract](06-music-production-contract.md). Прежние ADR не изменяются.
+
+## ADR-018 — Separation of State semantics and Music Production
+
+- **Decision:** Canonical semantics → interpretation → profile → preset → job/attempt → track → playlist.
+- **Reason:** Сохранить единый источник смысла State.
+- **Consequences:** M1.2 разрешает только контракты и templates; без semantics музыкальное наполнение остаётся draft.
+
+## ADR-019 — Stable identities and exact production revisions
+
+- **Decision:** Entity ID, schema_version, content_revision, preset/playlist version и approval различаются.
+- **Reason:** Исключить незаметную замену источников и аудио.
+- **Consequences:** Job фиксирует preset version; track адресует source attempt и audio revision; playlist фиксирует состав. Remix — новый track_id.
+
+## ADR-020 — Independent QC, artistic approval and publication clearance
+
+- **Decision:** Три независимых решения относятся к точной revision.
+- **Reason:** Техническое качество не подтверждает художественную пригодность или права.
+- **Consequences:** Ready требует всех gates; Rights Reviewer проверяет основания, Brand Owner даёт окончательное разрешение публикации. Codex не утверждает автоматически.
+
+## ADR-021 — Audio assets outside Git
+
+- **Decision:** Аудио и закрытые rights documents хранятся вне Git.
+- **Reason:** Не включать крупные binaries и закрытые материалы в Knowledge repository.
+- **Consequences:** В Git — metadata, stable references и checksums; provider не выбран; secrets/signed URLs запрещены.
+
+## ADR-022 — Playlist Vocal Policy
+
+- **Decision:** 85–90% instrumental group, 10–15% full_vocal по числу approved tracks.
+- **Reason:** Единый проверяемый стандарт состава.
+- **Consequences:** Классификация по аудио; при отсутствии целого V ближайшее к 0.125N, ties lower; исключение требует reviewer. Пустые playlists и повтор одной audio revision запрещены.
+
+## ADR-023 — Production metadata isolated from customer-facing RAG
+
+- **Decision:** Music production не получает автоматического retrieval допуска.
+- **Reason:** Не смешивать внутренний workflow с customer-facing knowledge.
+- **Consequences:** Types/scopes не расширяются; approved interpretation использует state_music/music только по RAG Contract. Music approval не создаёт Product × State relation.

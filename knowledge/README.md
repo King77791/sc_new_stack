@@ -12,6 +12,11 @@
 
 ## Навигация
 
+- [Music Production Architecture v1.0 — M1.2](docs/architecture/06-music-production-contract.md)
+- [Музыкальные policies и templates](music/README.md)
+
+M1.2 (2026-11-12) добавляет шестой архитектурный контракт, ADR-018–023 и `music/`: README, playlist-vocal-policy.md, quality-control.md, templates/ (два Markdown и четыре YAML), пустые states/, jobs/, tracks/, playlists/ с .gitkeep. Дерево checkpoint ниже сохраняет историческую базовую структуру; перечисление пяти контрактов/17 ADR относится к состоянию до M1.2. Новое ограниченное разрешение распространяется только на музыкальные контракты и незаполненные templates, не реальные instances, formal schemas или runtime.
+
 - [Обзор checkpoint и границы реализации](docs/architecture/00-overview.md)
 - [Root Architecture v1.0](docs/architecture/01-root-architecture.md)
 - [State Contract v1.0](docs/architecture/02-state-contract.md)

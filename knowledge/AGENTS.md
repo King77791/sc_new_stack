@@ -14,6 +14,8 @@ Patch v0.1.2 разрешает узкое уточнение Product measuremen
 
 ## MUST
 
+M1.2 (2026-11-12) явно разрешает [Music Production Contract](docs/architecture/06-music-production-contract.md), policies и шесть незаполненных Markdown/YAML templates в [music/](music/README.md), placeholders и согласованные navigation/ADR updates. Это ограниченное исключение прежних запретов schemas/editorial workflow только для музыкальных контрактов и шаблонов, не formal machine schemas или реальные instances. State/Product/relation instances, наполненные presets/jobs/tracks/playlists, M2–M4, runtime и Recommendation Contract по-прежнему запрещены. QC, artistic approval и publication clearance независимы и привязаны к exact revisions. Codex не присваивает художественное или юридическое approval. Production records не получают автоматического RAG допуска; types/scopes не расширяются. Остальные MUST/MUST NOT сохраняются.
+
 - Сохранять утверждённую архитектуру и границы Knowledge / Reasoning / Experience.
 - Читать соответствующие contracts перед изменением Knowledge.
 - Сохранять provenance; различать fact / observation / interpretation / hypothesis.

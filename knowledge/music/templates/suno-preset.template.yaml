@@ -1,0 +1,80 @@
+{
+    "schema_version":  "1.0",
+    "preset_id":  null,
+    "preset_version":  null,
+    "content_revision":  null,
+    "state_id":  null,
+    "owner":  null,
+    "production_profile_ref":  {
+                                   "path":  null,
+                                   "immutable_locator":  null,
+                                   "content_revision":  null
+                               },
+    "creative_concept":  null,
+    "intended_listening_context":  null,
+    "artistic_parameters":  {
+                                "sound_textures":  [
+
+                                                   ],
+                                "target_bpm_range":  null,
+                                "arrangement":  null,
+                                "excluded_characteristics":  [
+
+                                                             ],
+                                "emotional_arc":  null,
+                                "positive_characteristics":  [
+
+                                                             ],
+                                "rhythm":  null,
+                                "melody":  null,
+                                "harmony":  null,
+                                "intended_vocal_mode":  null,
+                                "dynamics":  null,
+                                "instrumentation":  [
+
+                                                    ],
+                                "target_bpm":  null,
+                                "genres_styles":  [
+
+                                                  ]
+                            },
+    "prompt_strategy":  null,
+    "prompt_text":  null,
+    "prompt": {
+        "language": null,
+        "style_text": null,
+        "exclude_text": null,
+        "lyrics_text": null,
+        "instrumental_intent": null,
+        "construction_notes": null
+    },
+    "service_settings":  {
+                             "service_identifier":  null,
+                             "model_identifier":  null,
+                             "evidence_ref":  null,
+                             "verified_at":  null,
+                             "settings":  {
+
+                                          }
+                         },
+    "provenance":  {
+                       "sources":  [
+
+                                   ],
+                       "created_at":  null,
+                       "author":  null,
+                       "epistemic_nature":  null
+                   },
+    "document_status":  "draft",
+    "approval":  {
+                     "status":  "draft",
+                     "reviewer":  null,
+                     "reviewed_at":  null,
+                     "target_revision":  null,
+                     "evidence_ref":  null,
+                     "remarks":  null
+                 },
+    "history":  [
+
+                ]
+}

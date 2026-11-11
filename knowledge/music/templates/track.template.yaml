@@ -1,0 +1,102 @@
+{
+    "schema_version":  "1.0",
+    "track_id":  null,
+    "content_revision":  null,
+    "title":  null,
+    "state_id":  null,
+    "source_job_id":  null,
+    "source_preset_ref":  {
+                              "path":  null,
+                              "preset_id":  null,
+                              "preset_version":  null,
+                              "content_revision":  null,
+                              "immutable_locator":  null
+                          },
+    "created_at":  null,
+    "production_owner":  null,
+    "derived_from_track_id":  null,
+    "lifecycle_status":  "draft",
+    "audio_revisions":  [
+                            {
+                                "audio_revision_id":  null,
+                                "created_at":  null,
+                                "source_job_id":  null,
+                                "source_attempt_id":  null,
+                                "source_result_id":  null,
+                                "processing_history":  [
+
+                                                       ],
+                                "vocal_class":  null,
+                                "classification_record":  {
+                                                              "reviewed_at":  null,
+                                                              "remarks":  null,
+                                                              "reviewer":  null
+                                                          },
+                                "duration_seconds":  null,
+                                "asset_reference":  null,
+                                "checksum":  {
+                                                 "algorithm":  "sha256",
+                                                 "value":  null
+                                             },
+                                "technical_qc":  {
+                                                     "status":  "pending",
+                                                     "reviewer":  null,
+                                                     "reviewed_at":  null,
+                                                     "target_revision":  null,
+                                                     "evidence_ref":  null,
+                                                     "remarks":  null
+                                                 },
+                                "artistic_approval":  {
+                                                          "status":  "pending",
+                                                          "reviewer":  null,
+                                                          "reviewed_at":  null,
+                                                          "target_revision":  null,
+                                                          "evidence_ref":  null,
+                                                          "remarks":  null
+                                                      },
+                                "production_profile_ref":  {
+                                                               "path":  null,
+                                                               "immutable_locator":  null,
+                                                               "content_revision":  null
+                                                           },
+                                "rights_provenance":  {
+                                                          "evidence_refs":  [
+
+                                                                            ],
+                                                          "restrictions":  null,
+                                                          "usage_basis":  null,
+                                                          "permitted_distribution":  null,
+                                                          "origin":  null
+                                                      },
+                                "publication_clearance":  {
+                                                              "status":  "pending",
+                                                              "reviewer":  null,
+                                                              "reviewed_at":  null,
+                                                              "target_revision":  null,
+                                                              "intended_distribution":  null,
+                                                              "evidence_ref":  null,
+                                                              "remarks":  null,
+                                                              "rights_review":  {
+                                                                                    "status":  "pending",
+                                                                                    "reviewer":  null,
+                                                                                    "reviewed_at":  null,
+                                                                                    "target_revision":  null,
+                                                                                    "evidence_ref":  null,
+                                                                                    "remarks":  null
+                                                                                },
+                                                              "final_authorization":  {
+                                                                                          "status":  "pending",
+                                                                                          "reviewer":  null,
+                                                                                          "reviewed_at":  null,
+                                                                                          "target_revision":  null,
+                                                                                          "evidence_ref":  null,
+                                                                                          "remarks":  null
+                                                                                      }
+                                                          },
+                                "publication_hold":  true
+                            }
+                        ],
+    "history":  [
+
+                ]
+}

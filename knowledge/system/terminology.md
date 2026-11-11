@@ -1,5 +1,20 @@
 # Terminology
 
+Музыкальные термины M1.2 определены [Music Production Contract](../docs/architecture/06-music-production-contract.md):
+
+| Термин | Значение |
+| --- | --- |
+| State Music Interpretation | Музыкальная интерпретация approved canonical semantics, без второго определения State. |
+| Music Production Profile | Производственные характеристики со ссылкой на точную approved interpretation revision. |
+| Preset | Переиспользуемое задание с preset_id и адресуемой preset_version. |
+| Generation Job / Attempt | Конкретная работа / отдельная записанная попытка; количество attempts вычисляется. |
+| Track / Audio Revision | Произведение со stable track_id / точная версия аудио с checksum. Remix получает новый track_id. |
+| Playlist Manifest | Единственный источник фиксированного состава, порядка и точных audio references версии playlist. |
+| Technical QC | Самостоятельная проверка технической целостности точной revision. |
+| Artistic Approval | Самостоятельное художественное решение Brand Owner о точной revision. |
+| Publication Clearance | Rights review и окончательное разрешение Brand Owner на конкретное распространение; не RAG eligibility. |
+| Vocal Class | instrumental / vocal_texture / full_vocal по фактической audio revision. |
+
 Канонический словарь Knowledge Domain, материализованный в Patch v0.1.1. State-specific и product-specific документы используют эти термины согласованно с архитектурными контрактами.
 
 | Термин | Значение |

@@ -2,6 +2,8 @@
 
 ## Назначение и статус
 
+M1.2 (2026-11-12) материализует [Music Production Contract v1.0](06-music-production-contract.md), [policies и шесть шаблонов](../../music/README.md), добавляет ADR-018–023. Это ограниченное новое разрешение поверх исторического checkpoint: музыкальные Markdown/YAML templates и контракты допустимы, formal machine schemas, реальные instances, runtime и M2–M4 не разрешены. Для M1.2 self-review дополнительно проверяет шестой контракт, music tree и 23 ADR; прежние критерии ниже описывают базовый checkpoint.
+
 Checkpoint материализует четыре уже утверждённых контракта. Основание — задание пользователя Knowledge Architecture Checkpoint v0.1; дата фиксации — 2026-10-31. Документы описывают архитектуру, а не реализованный runtime или наполненную базу знаний.
 
 Patch v0.1.1 (2026-10-31) материализует семь [system documents](../../README.md), закрывает State ↔ moods и canonical Product identity, добавляет ADR-011/012. Четыре контракта остаются базовой линией v1.0 с этими уточнениями; архитектура не перепроектируется.

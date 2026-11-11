@@ -1,0 +1,79 @@
+{
+    "schema_version":  "1.0",
+    "playlist_id":  null,
+    "playlist_version":  null,
+    "content_revision":  null,
+    "state_id":  null,
+    "owner":  null,
+    "title":  null,
+    "description":  null,
+    "intended_context":  null,
+    "lifecycle_status":  "draft",
+    "track_entries":  [
+                          {
+                              "position":  null,
+                              "audio_revision_id":  null,
+                              "checksum":  null,
+                              "track_id":  null
+                          }
+                      ],
+    "vocal_policy":  {
+                         "policy_revision_ref":  null,
+                         "rounding_rule":  "If no integer V fits 10-15%, nearest to 0.125*N; ties choose lower",
+                         "policy_ref":  "knowledge/music/playlist-vocal-policy.md",
+                         "exception_review":  {
+                                                  "status":  "pending",
+                                                  "reviewer":  null,
+                                                  "reviewed_at":  null,
+                                                  "target_revision":  null,
+                                                  "evidence_ref":  null,
+                                                  "remarks":  null
+                                              },
+                         "calculation_rule":  "N = all track_entries of the exact playlist version; V = entries whose exact audio revision is full_vocal; share = V / N; N > 0"
+                     },
+    "technical_qc":  {
+                         "status":  "pending",
+                         "reviewer":  null,
+                         "reviewed_at":  null,
+                         "target_revision":  null,
+                         "evidence_ref":  null,
+                         "remarks":  null
+                     },
+    "artistic_approval":  {
+                              "status":  "pending",
+                              "reviewer":  null,
+                              "reviewed_at":  null,
+                              "target_revision":  null,
+                              "evidence_ref":  null,
+                              "remarks":  null
+                          },
+    "publication_clearance":  {
+                                  "status":  "pending",
+                                  "reviewer":  null,
+                                  "reviewed_at":  null,
+                                  "target_revision":  null,
+                                  "intended_distribution":  null,
+                                  "evidence_ref":  null,
+                                  "remarks":  null,
+                                  "rights_review":  {
+                                                        "status":  "pending",
+                                                        "reviewer":  null,
+                                                        "reviewed_at":  null,
+                                                        "target_revision":  null,
+                                                        "evidence_ref":  null,
+                                                        "remarks":  null
+                                                    },
+                                  "final_authorization":  {
+                                                              "status":  "pending",
+                                                              "reviewer":  null,
+                                                              "reviewed_at":  null,
+                                                              "target_revision":  null,
+                                                              "evidence_ref":  null,
+                                                              "remarks":  null
+                                                          }
+                              },
+    "publication_hold":  true,
+    "history":  [
+
+                ]
+}

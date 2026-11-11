@@ -1,0 +1,76 @@
+{
+    "schema_version":  "1.0",
+    "job_id":  null,
+    "content_revision":  null,
+    "state_id":  null,
+    "preset_ref":  {
+                       "path":  null,
+                       "preset_id":  null,
+                       "preset_version":  null,
+                       "content_revision":  null,
+                       "immutable_locator":  null
+                   },
+    "creative_concept":  null,
+    "production_purpose":  null,
+    "owner":  null,
+    "created_at":  null,
+    "intended_vocal_mode":  null,
+    "lyrics_ref":  null,
+    "job_status":  "draft",
+    "attempts":  [
+                     {
+                         "attempt_id":  null,
+                         "ordinal":  null,
+                         "recorded_at":  null,
+                         "attempt_status":  "recorded",
+                         "submitted_prompt":  null,
+                         "submitted_lyrics_ref":  null,
+                         "service_identifier":  null,
+                         "model_identifier":  null,
+                         "actual_service_settings":  {
+                                                         "evidence_ref":  null,
+                                                         "verified_at":  null,
+                                                         "settings":  {
+
+                                                                      }
+                                                     },
+                         "external_generation_id":  null,
+                         "results":  [
+                                         {
+                                             "asset_reference":  null,
+                                             "result_id":  null,
+                                             "checksum":  null
+                                         }
+                                     ],
+                         "observed_problems":  [
+
+                                               ],
+                         "repeat_decision":  {
+                                                 "reason":  null,
+                                                 "decided_at":  null,
+                                                 "owner":  null,
+                                                 "decision":  null
+                                             }
+                     }
+                 ],
+    "selected_results":  [
+
+                         ],
+    "linked_track_ids":  [
+
+                         ],
+    "artistic_decision":  {
+                              "status":  "pending",
+                              "reviewer":  null,
+                              "reviewed_at":  null,
+                              "target_revision":  null,
+                              "evidence_ref":  null,
+                              "remarks":  null
+                          },
+    "provenance":  [
+
+                   ],
+    "history":  [
+
+                ]
+}
